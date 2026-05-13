@@ -1,224 +1,179 @@
-/* APP LAYOUT */
-
 .app-shell {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-primary);
+  background:
+    radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.08), transparent 34rem),
+    radial-gradient(circle at 25% 20%, rgba(245, 158, 11, 0.06), transparent 28rem),
+    var(--bg-primary);
 }
 
-/* SIDEBAR */
-
 .sidebar {
-  width: 280px;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(15,23,42,.98),
-      rgba(2,6,23,.98)
-    );
-
-  border-right: 1px solid var(--border);
-
-  padding: 28px 20px;
-
+  width: 300px;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  padding: 34px 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-
-  position: sticky;
-  top: 0;
-
-  min-height: 100vh;
-
-  backdrop-filter: blur(20px);
-}
-
-.sidebar-top {
-  display: flex;
-  flex-direction: column;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 24px 0 80px rgba(0, 0, 0, 0.24);
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
-
-  margin-bottom: 34px;
+  gap: 16px;
+  margin-bottom: 38px;
 }
 
 .brand-mark {
-  width: 48px;
-  height: 48px;
-
-  border-radius: 16px;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--sky),
-      #2563eb
-    );
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-weight: 800;
-  font-size: 18px;
-
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #22d3ee, #2563eb);
   color: white;
-
-  box-shadow:
-    0 10px 25px rgba(37,99,235,.28);
+  font-size: 19px;
+  font-weight: 900;
+  box-shadow: 0 18px 45px rgba(37, 99, 235, 0.35);
 }
 
 .brand-copy h2 {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
 }
 
 .brand-copy p {
+  margin-top: 3px;
   color: var(--text-muted);
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 14px;
 }
 
-/* FACILITY CARD */
-
 .facility-card {
-  padding: 18px;
-
-  border-radius: 20px;
-
+  padding: 22px;
+  margin-bottom: 34px;
+  border-radius: 24px;
   background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,.05),
-      rgba(255,255,255,.02)
-    );
-
-  border: 1px solid var(--border);
-
-  margin-bottom: 28px;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
 
 .facility-label {
+  margin-bottom: 12px;
+  color: #67e8f9;
   font-size: 11px;
-  letter-spacing: .08em;
+  font-weight: 900;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-
-  color: var(--sky);
-
-  margin-bottom: 10px;
-
-  font-weight: 700;
 }
 
 .facility-name {
-  font-size: 20px;
-  font-weight: 700;
-
-  margin-bottom: 6px;
+  margin-bottom: 7px;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 .facility-meta {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 15px;
 }
-
-/* NAVIGATION */
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sidebar-link {
+  min-height: 54px;
   display: flex;
   align-items: center;
-  gap: 12px;
-
-  padding: 14px 16px;
-
-  border-radius: 16px;
-
+  gap: 14px;
+  padding: 0 18px;
+  border-radius: 18px;
   color: var(--text-secondary);
   text-decoration: none;
-
-  transition: var(--transition);
-
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 700;
+  transition: 180ms ease;
 }
 
 .sidebar-link:hover {
-  background: rgba(255,255,255,.05);
+  background: rgba(255, 255, 255, 0.055);
   color: white;
 }
 
 .sidebar-link.active {
-  background: rgba(245,158,11,.12);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.08));
+  border: 1px solid rgba(245, 158, 11, 0.22);
   color: var(--amber);
-
-  border: 1px solid rgba(245,158,11,.16);
+  box-shadow: 0 14px 32px rgba(245, 158, 11, 0.08);
 }
 
-/* USER */
-
 .sidebar-user {
-  margin-top: 30px;
-
   padding-top: 24px;
-
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .user-name {
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.user-role {
-  color: var(--text-muted);
-  font-size: 14px;
-
-  margin-bottom: 18px;
-}
-
-/* MAIN */
-
-.main-content {
-  flex: 1;
-  padding: 32px;
-}
-
-/* PAGE HEADER */
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  gap: 20px;
-
-  margin-bottom: 30px;
-}
-
-.page-header h1 {
-  font-size: 38px;
+  margin-bottom: 5px;
+  font-size: 16px;
   font-weight: 800;
 }
 
-.page-header p {
+.user-role {
+  margin-bottom: 18px;
   color: var(--text-muted);
-  margin-top: 8px;
+  font-size: 14px;
+  text-transform: capitalize;
 }
 
-/* MOBILE */
+.main-content {
+  flex: 1;
+  padding: 54px 44px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 42px;
+}
+
+.page-header h1 {
+  font-size: 46px;
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+
+.page-title-sub,
+.page-header p {
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 17px;
+}
 
 @media (max-width: 1000px) {
   .sidebar {
-    width: 240px;
+    width: 270px;
+  }
+
+  .main-content {
+    padding: 38px 28px;
+  }
+
+  .page-header h1 {
+    font-size: 38px;
   }
 }
 
@@ -228,25 +183,23 @@
   }
 
   .sidebar {
+    position: relative;
     width: 100%;
     min-height: auto;
-
-    position: relative;
-
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .sidebar-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .main-content {
-    padding: 22px;
+    padding: 28px 18px;
   }
 
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .page-header h1 {
-    font-size: 30px;
   }
 }
