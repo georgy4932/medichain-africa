@@ -48,38 +48,54 @@ export default function OnboardingPage() {
 
   async function handleSubmit(event) {
     event.preventDefault()
-
-    if (!session?.user?.id) {
-      setError('Your session has expired. Please sign in again.')
-      return
-    }
-
     setError(null)
     setLoading(true)
 
-    const payload = {
-      ...form,
-      name: form.name.trim(),
-      address_line1: form.address_line1.trim(),
-      city: form.city.trim(),
-      state_province: form.state_province.trim(),
-      country: form.country.trim().toUpperCase(),
-      near_expiry_threshold_days: Number(form.near_expiry_threshold_days),
-      created_by: session.user.id,
-    }
+    try {
+      if (!session?.user?.id) {
+        throw new Error('Your session has expired. Please sign in again.')
+      }
 
-    const { error: facilityError } = await supabase
-      .from('facilities')
-      .insert(payload)
+      const payload = {
+        name: form.name.trim(),
+        facility_type: form.facility_type,
+        address_line1: form.address_line1.trim(),
+        address_line2: form.address_line2.trim() || null,
+        city: form.city.trim(),
+        state_province: form.state_province.trim(),
+        country: form.country.trim().toUpperCase(),
+        postal_code: form.postal_code.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        registration_number: form.registration_number.trim() || null,
+        default_currency: form.default_currency,
+        near_expiry_threshold_days: Number(form.near_expiry_threshold_days),
+        created_by: session.user.id,
+      }
 
-    if (facilityError) {
-      setError(facilityError.message)
+      const { data, error: facilityError } = await supabase
+        .from('facilities')
+        .insert(payload)
+        .select('id, name')
+        .single()
+
+      if (facilityError) {
+        throw facilityError
+      }
+
+      if (!data?.id) {
+        throw new Error('Facility was not created. No facility ID was returned.')
+      }
+
+      await refreshFacility()
+
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      console.error('Facility setup failed:', err)
+      setError(err.message || 'Could not create facility. Please try again.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    await refreshFacility()
-    navigate('/dashboard')
   }
 
   return (
