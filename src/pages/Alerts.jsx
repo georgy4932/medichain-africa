@@ -214,7 +214,7 @@ function AlertRow({ alert: a, onAction }) {
         {rec && a.status === 'active' && (
           <div style={{
             fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-primary)',
-            border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border-soft)', borderRadius: 'var(--r-sm)',
             padding: '6px 10px', lineHeight: 1.5,
           }}>
             <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Recommended: </span>
