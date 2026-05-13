@@ -26,11 +26,10 @@ export default function AppShell() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-top">
+        <div>
           <div className="sidebar-brand">
-            <div className="brand-mark">MC</div>
-
-            <div className="brand-copy">
+            <div className="brand-mark">M</div>
+            <div>
               <h2>MediChain</h2>
               <p>Africa</p>
             </div>
@@ -38,11 +37,9 @@ export default function AppShell() {
 
           {facility && (
             <div className="facility-card">
-              <div className="facility-label">Facility</div>
-              <div className="facility-name">{facility.name}</div>
-              <div className="facility-meta">
-                {facility.city}, {facility.country}
-              </div>
+              <span>Current facility</span>
+              <strong>{facility.name}</strong>
+              <small>{facility.city}, {facility.country}</small>
             </div>
           )}
 
@@ -55,7 +52,7 @@ export default function AppShell() {
                   isActive ? 'sidebar-link active' : 'sidebar-link'
                 }
               >
-                <span>{item.icon}</span>
+                <span className="sidebar-link-icon">{item.icon}</span>
                 <span>{item.label}</span>
               </NavLink>
             ))}
@@ -63,11 +60,9 @@ export default function AppShell() {
         </div>
 
         <div className="sidebar-user">
-          <div className="user-name">
-            {profile?.full_name || 'MediChain User'}
-          </div>
-          <div className="user-role">
-            {facility?.staffRole?.replace('_', ' ') || 'Team member'}
+          <div>
+            <strong>{profile?.full_name || 'MediChain User'}</strong>
+            <span>{facility?.staffRole?.replace('_', ' ') || 'Team member'}</span>
           </div>
 
           <button className="btn btn-ghost btn-sm btn-full" onClick={handleSignOut}>
