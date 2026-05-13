@@ -20,54 +20,54 @@ export default function AppShell() {
 
   async function handleSignOut() {
     await signOut()
-    navigate('/auth')
+    navigate('/auth', { replace: true })
   }
 
   return (
     <div className="app-shell">
-      <aside className="app-sidebar">
-        <div className="sidebar-brand">
-          <div className="brand-mark">MC</div>
+      <aside className="sidebar">
+        <div className="sidebar-top">
+          <div className="sidebar-brand">
+            <div className="brand-mark">MC</div>
 
-          <div>
-            <div className="brand-name">MediChain</div>
-            <div className="brand-subtitle">Africa</div>
+            <div className="brand-copy">
+              <h2>MediChain</h2>
+              <p>Africa</p>
+            </div>
           </div>
+
+          {facility && (
+            <div className="facility-card">
+              <div className="facility-label">Facility</div>
+              <div className="facility-name">{facility.name}</div>
+              <div className="facility-meta">
+                {facility.city}, {facility.country}
+              </div>
+            </div>
+          )}
+
+          <nav className="sidebar-nav">
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  isActive ? 'sidebar-link active' : 'sidebar-link'
+                }
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
         </div>
 
-        {facility && (
-          <div className="facility-card">
-            <div className="eyebrow">Facility</div>
-            <div className="facility-name">{facility.name}</div>
-            <div className="facility-location">
-              {facility.city}, {facility.country}
-            </div>
-          </div>
-        )}
-
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                isActive ? 'nav-link nav-link-active' : 'nav-link'
-              }
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-
         <div className="sidebar-user">
-          <div>
-            <div className="user-name">
-              {profile?.full_name || 'Medichain User'}
-            </div>
-            <div className="user-role">
-              {facility?.staffRole?.replace('_', ' ') || 'Team member'}
-            </div>
+          <div className="user-name">
+            {profile?.full_name || 'MediChain User'}
+          </div>
+          <div className="user-role">
+            {facility?.staffRole?.replace('_', ' ') || 'Team member'}
           </div>
 
           <button className="btn btn-ghost btn-sm btn-full" onClick={handleSignOut}>
@@ -76,7 +76,7 @@ export default function AppShell() {
         </div>
       </aside>
 
-      <main className="app-main">
+      <main className="main-content">
         <Outlet />
       </main>
     </div>
