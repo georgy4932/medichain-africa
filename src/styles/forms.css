@@ -3,34 +3,28 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .field label {
-  font-size: 13px;
-  font-weight: 600;
   color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 input,
 select,
 textarea {
   width: 100%;
-
-  border: 1px solid var(--border);
-
-  background: rgba(255,255,255,.03);
-
+  min-height: 44px;
+  border: 1px solid var(--border-soft);
+  background: rgba(5, 11, 20, 0.62);
   color: var(--text-primary);
-
-  border-radius: 14px;
-
-  padding: 14px;
-
+  border-radius: 12px;
+  padding: 11px 13px;
   font-size: 14px;
-
   outline: none;
-
   transition: var(--transition);
 }
 
@@ -42,33 +36,32 @@ textarea::placeholder {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: rgba(245,158,11,.5);
-
-  box-shadow:
-    0 0 0 3px rgba(245,158,11,.12);
+  border-color: rgba(25, 194, 181, 0.58);
+  box-shadow: 0 0 0 3px rgba(25, 194, 181, 0.12);
 }
 
 textarea {
   resize: vertical;
-  min-height: 110px;
+  min-height: 96px;
+}
+
+.grid-2,
+.grid-3,
+.grid-4 {
+  display: grid;
+  gap: 14px;
 }
 
 .grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 /* SEARCH */
@@ -79,13 +72,11 @@ textarea {
 
 .search-icon {
   position: absolute;
-
   top: 50%;
   left: 14px;
-
   transform: translateY(-50%);
-
-  opacity: .5;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .search-input-wrap input {
@@ -95,23 +86,20 @@ textarea {
 /* BUTTONS */
 
 .btn {
-  border: none;
-
-  border-radius: 14px;
-
-  padding: 12px 18px;
-
-  font-size: 14px;
-  font-weight: 700;
-
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 850;
   cursor: pointer;
-
   transition: var(--transition);
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .btn:hover {
@@ -119,35 +107,43 @@ textarea {
 }
 
 .btn-primary {
-  background: var(--amber);
-  color: #111827;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: #021013;
+  box-shadow: 0 14px 28px rgba(25, 194, 181, 0.18);
 }
 
 .btn-primary:hover {
-  opacity: .96;
+  filter: brightness(1.04);
 }
 
 .btn-secondary {
-  background: var(--sky);
-  color: white;
+  background: rgba(56, 189, 248, 0.14);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.18);
 }
 
 .btn-danger {
-  background: var(--danger);
-  color: white;
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.18);
 }
 
 .btn-ghost {
-  background: rgba(255,255,255,.04);
-
+  background: rgba(255, 255, 255, 0.035);
   color: var(--text-secondary);
+  border-color: var(--border-soft);
+}
 
-  border: 1px solid var(--border);
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-primary);
 }
 
 .btn-sm {
-  padding: 9px 12px;
-  font-size: 13px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: 10px;
 }
 
 .btn-full {
