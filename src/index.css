@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @import './styles/layout.css';
 @import './styles/dashboard.css';
@@ -8,30 +8,36 @@
 @import './styles/utilities.css';
 
 :root {
-  --bg-primary: #020617;
-  --bg-secondary: #0f172a;
+  --bg-primary: #07111f;
+  --bg-secondary: #050b14;
 
-  --surface: rgba(15, 23, 42, 0.78);
-  --surface-hover: rgba(30, 41, 59, 0.95);
+  --surface: #0d1a2b;
+  --surface-elevated: #111f33;
+  --surface-soft: rgba(255, 255, 255, 0.035);
 
-  --border: rgba(148, 163, 184, 0.12);
+  --border: #22324a;
+  --border-soft: rgba(148, 163, 184, 0.14);
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  --text-primary: #f4f7fb;
+  --text-secondary: #9aa8ba;
+  --text-muted: #657386;
 
-  --amber: #f59e0b;
-  --teal: #14b8a6;
-  --rose: #f43f5e;
-  --sky: #38bdf8;
+  --primary: #19c2b5;
+  --primary-hover: #12a79c;
 
-  --success: #22c55e;
-  --warning: #f59e0b;
+  --info: #38bdf8;
+  --warning: #f5a524;
   --danger: #ef4444;
+  --success: #22c55e;
+  --purple: #8b5cf6;
 
-  --radius: 20px;
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 30px;
 
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 18px 48px rgba(0, 0, 0, 0.22);
+  --shadow-card: 0 24px 70px rgba(0, 0, 0, 0.26);
 
   --transition: 180ms ease;
 }
@@ -47,15 +53,30 @@ body,
   min-height: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(20, 184, 166, 0.06), transparent 25%),
+    radial-gradient(circle at top right, rgba(25, 194, 181, 0.12), transparent 34rem),
+    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 30rem),
     var(--bg-primary);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
 }
 
 h1,
@@ -67,11 +88,7 @@ p {
   margin: 0;
 }
 
-a {
-  color: inherit;
-}
-
-/* AUTH PAGE RESTORE */
+/* restored auth styles */
 
 .auth-page {
   min-height: 100vh;
@@ -79,8 +96,8 @@ a {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 30rem),
-    radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.1), transparent 34rem),
+    radial-gradient(circle at top right, rgba(25, 194, 181, 0.14), transparent 30rem),
+    radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.09), transparent 34rem),
     #07111f;
 }
 
@@ -99,25 +116,27 @@ a {
 
 .auth-brand h1 {
   font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  font-weight: 900;
+  letter-spacing: -0.05em;
 }
 
 .auth-brand p {
   margin-top: 4px;
   color: var(--text-muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
 }
 
 .auth-card {
-  padding: 28px;
-  border-radius: 24px;
-  background: rgba(15, 23, 42, 0.88);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+  padding: 30px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(13, 26, 43, 0.92);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
 }
 
 .auth-header {
@@ -125,13 +144,14 @@ a {
 }
 
 .auth-header h2 {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
 }
 
 .auth-header p {
   margin-top: 8px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -145,7 +165,7 @@ a {
 .auth-switch {
   margin-top: 22px;
   padding-top: 20px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  border-top: 1px solid var(--border-soft);
   display: flex;
   justify-content: center;
   gap: 6px;
@@ -156,8 +176,6 @@ a {
 .auth-switch button {
   border: none;
   background: transparent;
-  color: #67e8f9;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
+  color: var(--primary);
+  font-weight: 800;
 }
