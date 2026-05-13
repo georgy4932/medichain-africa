@@ -102,7 +102,7 @@ export default function SettingsPage() {
                 onClick={() => setFacTab(t.key)}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
-                  padding: '6px 9px', borderRadius: 'var(--radius)',
+                  padding: '6px 9px', borderRadius: 'var(--r)',
                   fontSize: 12.5, fontWeight: facTab === t.key ? 600 : 400,
                   background: facTab === t.key ? 'var(--primary-dim)' : 'transparent',
                   color: facTab === t.key ? 'var(--primary)' : 'var(--text-muted)',
@@ -305,7 +305,7 @@ export default function SettingsPage() {
                   display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
                   gap: 16, padding: '14px 16px',
                   background: 'var(--bg-primary)', border: '1px solid var(--border-soft)',
-                  borderRadius: 'var(--radius)', flexWrap: 'wrap',
+                  borderRadius: 'var(--r)', flexWrap: 'wrap',
                 }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 3 }}>Deactivate facility</div>
