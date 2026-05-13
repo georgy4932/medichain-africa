@@ -1,270 +1,325 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useFacility } from '../hooks/useFacility'
-import { fmtDate } from '../utils/formatters'
-import StatusBadge from '../components/shared/StatusBadge'
-import Modal from '../components/shared/Modal'
-import EmptyState from '../components/shared/EmptyState'
-import InlineError from '../components/shared/InlineError'
+import { useAuth } from '../hooks/useAuth'
+import { fmtDate, fmtRelative, initials } from '../utils/formatters'
+import { Modal, InlineError, EmptyState, Badge, SpinnerCenter } from '../components/shared'
 
-const STAFF_ROLES = [
-  { value: 'pharmacist', label: 'Pharmacist' },
-  { value: 'inventory_staff', label: 'Inventory Staff' },
-  { value: 'facility_admin', label: 'Facility Admin' },
-]
+const ROLE_META = {
+  pharmacist:      { label: 'Pharmacist',      badge: 'badge-primary', desc: 'Can manage inventory and view transfers' },
+  pharmacy_tech:   { label: 'Pharmacy Tech',   badge: 'badge-info',    desc: 'Can view inventory and log movements' },
+  facility_admin:  { label: 'Facility Admin',  badge: 'badge-warning', desc: 'Full access including staff management and pricing' },
+}
 
 export default function StaffPage() {
-  const { facilityId, isFacilityAdmin } = useFacility()
+  const { facilityId, isAdmin } = useFacility()
+  const { profile: currentUser } = useAuth()
+  const [staff,    setStaff]    = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [inviteOpen, setInviteOpen] = useState(false)
 
-  const [staff, setStaff] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
+  useEffect(() => { if (facilityId) load() }, [facilityId])
 
-  const loadStaff = useCallback(async () => {
-    if (!facilityId) return
-
+  async function load() {
     setLoading(true)
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('facility_staff')
-      .select('*, user_profiles(full_name, role)')
+      .select('*, user_profiles(id, full_name, email, role, created_at)')
       .eq('facility_id', facilityId)
-      .order('joined_at', { ascending: false })
-
-    if (error) {
-      console.error('Error loading staff:', error.message)
-      setStaff([])
-      setLoading(false)
-      return
-    }
-
+      .order('joined_at', { ascending: true })
     setStaff(data ?? [])
     setLoading(false)
-  }, [facilityId])
-
-  useEffect(() => {
-    loadStaff()
-  }, [loadStaff])
-
-  async function toggleActive(staffMember) {
-    const { error } = await supabase
-      .from('facility_staff')
-      .update({ is_active: !staffMember.is_active })
-      .eq('id', staffMember.id)
-
-    if (error) {
-      console.error('Error updating staff status:', error.message)
-      return
-    }
-
-    loadStaff()
   }
 
+  async function toggleActive(member) {
+    if (!isAdmin) return
+    if (member.user_profiles?.id === currentUser?.id) return // can't deactivate self
+    await supabase.from('facility_staff').update({ is_active: !member.is_active }).eq('id', member.id)
+    load()
+  }
+
+  async function changeRole(memberId, newRole) {
+    if (!isAdmin) return
+    await supabase.from('facility_staff').update({ role: newRole }).eq('id', memberId)
+    load()
+  }
+
+  const activeStaff   = staff.filter(s => s.is_active)
+  const inactiveStaff = staff.filter(s => !s.is_active)
+
   return (
-    <div className="staff-page fade-up">
-      <div className="page-header">
+    <div>
+      <div className="page-top">
         <div>
-          <h1>Staff</h1>
-          <div className="page-title-sub">
-            {staff.length} team member{staff.length !== 1 ? 's' : ''}
+          <div className="page-eyebrow">STAFF MANAGEMENT</div>
+          <div className="page-title">Staff</div>
+          <div className="page-subtitle">
+            {activeStaff.length} active team member{activeStaff.length !== 1 ? 's' : ''}
           </div>
         </div>
-
-        {isFacilityAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            Add staff
-          </button>
-        )}
+        <div className="page-actions">
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={() => setInviteOpen(true)}>
+              + Invite staff
+            </button>
+          )}
+        </div>
       </div>
 
-      {loading ? (
-        <div className="page-loading">
-          <div className="spinner spinner-lg" />
-        </div>
-      ) : staff.length === 0 ? (
-        <EmptyState
-          icon="◉"
-          title="No staff yet"
-          message="Add your team members to manage facility operations."
-        />
-      ) : (
-        <div className="card staff-card">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Joined</th>
-                  <th>Status</th>
-                  {isFacilityAdmin && <th>Actions</th>}
-                </tr>
-              </thead>
-
-              <tbody>
-                {staff.map((staffMember) => (
-                  <tr key={staffMember.id}>
-                    <td>
-                      <div className="table-primary-cell">
-                        {staffMember.user_profiles?.full_name || 'Unknown user'}
-                      </div>
-                    </td>
-
-                    <td>
-                      <span className="tag">
-                        {staffMember.role?.replace(/_/g, ' ') || 'team member'}
-                      </span>
-                    </td>
-
-                    <td className="table-muted-cell">
-                      {fmtDate(staffMember.joined_at)}
-                    </td>
-
-                    <td>
-                      <StatusBadge variant={staffMember.is_active ? 'success' : 'neutral'}>
-                        {staffMember.is_active ? 'Active' : 'Inactive'}
-                      </StatusBadge>
-                    </td>
-
-                    {isFacilityAdmin && (
-                      <td>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => toggleActive(staffMember)}
-                        >
-                          {staffMember.is_active ? 'Deactivate' : 'Reactivate'}
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {loading ? <SpinnerCenter /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Role reference */}
+          <div className="card" style={{ marginBottom: 2 }}>
+            <div className="card-header">
+              <span className="card-title">Role Permissions</span>
+            </div>
+            <div className="card-pad" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              {Object.entries(ROLE_META).map(([role, meta]) => (
+                <div key={role} style={{ flex: '1 1 180px', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <Badge className={meta.badge}>{meta.label}</Badge>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>{meta.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Active staff */}
+          {activeStaff.length === 0 ? (
+            <EmptyState
+              title="No staff members"
+              description="Invite colleagues to join your facility and access the inventory system."
+              actions={isAdmin && <button className="btn btn-primary btn-sm" onClick={() => setInviteOpen(true)}>Invite staff</button>}
+            />
+          ) : (
+            <div className="section-shell">
+              <div className="section-shell-header">
+                <span className="section-shell-title">Active</span>
+                <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{activeStaff.length} member{activeStaff.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Member</th>
+                      <th>Role</th>
+                      <th>Joined</th>
+                      {isAdmin && <th>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeStaff.map(member => (
+                      <StaffRow
+                        key={member.id}
+                        member={member}
+                        isAdmin={isAdmin}
+                        isSelf={member.user_profiles?.id === currentUser?.id}
+                        onToggle={() => toggleActive(member)}
+                        onRoleChange={r => changeRole(member.id, r)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Inactive staff */}
+          {inactiveStaff.length > 0 && (
+            <div className="section-shell" style={{ opacity: 0.7 }}>
+              <div className="section-shell-header">
+                <span className="section-shell-title">Deactivated</span>
+                <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{inactiveStaff.length}</span>
+              </div>
+              <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Member</th>
+                      <th>Role</th>
+                      <th>Joined</th>
+                      {isAdmin && <th>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inactiveStaff.map(member => (
+                      <StaffRow
+                        key={member.id}
+                        member={member}
+                        isAdmin={isAdmin}
+                        isSelf={false}
+                        onToggle={() => toggleActive(member)}
+                        onRoleChange={r => changeRole(member.id, r)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {showModal && (
-        <AddStaffModal
+      {inviteOpen && (
+        <InviteModal
           facilityId={facilityId}
-          onClose={() => setShowModal(false)}
-          onSuccess={() => {
-            setShowModal(false)
-            loadStaff()
-          }}
+          onClose={() => setInviteOpen(false)}
+          onSuccess={() => { setInviteOpen(false); load() }}
         />
       )}
     </div>
   )
 }
 
-function AddStaffModal({ facilityId, onClose, onSuccess }) {
-  const [userId, setUserId] = useState('')
-  const [role, setRole] = useState('pharmacist')
+function StaffRow({ member, isAdmin, isSelf, onToggle, onRoleChange }) {
+  const p = member.user_profiles
+  const roleMeta = ROLE_META[member.role] ?? { label: member.role, badge: 'badge-neutral' }
+
+  return (
+    <tr style={{ opacity: member.is_active ? 1 : 0.5 }}>
+      <td>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'var(--primary-dim)', border: '1px solid var(--primary-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, fontWeight: 700, color: 'var(--primary)', flexShrink: 0,
+          }}>
+            {initials(p?.full_name ?? '?')}
+          </div>
+          <div>
+            <div className="td-primary">{p?.full_name ?? '—'}</div>
+            <div className="td-muted">{p?.email}</div>
+          </div>
+        </div>
+        {isSelf && (
+          <span style={{ fontSize: 9.5, color: 'var(--primary)', marginLeft: 37, fontWeight: 600 }}>You</span>
+        )}
+      </td>
+      <td>
+        {isAdmin && !isSelf ? (
+          <select
+            value={member.role}
+            onChange={e => onRoleChange(e.target.value)}
+            style={{
+              background: 'transparent', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)',
+              padding: '3px 22px 3px 7px', fontSize: 11, cursor: 'pointer',
+              appearance: 'none',
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23657386' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
+              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 7px center',
+            }}
+          >
+            {Object.entries(ROLE_META).map(([r, m]) => (
+              <option key={r} value={r}>{m.label}</option>
+            ))}
+          </select>
+        ) : (
+          <Badge className={roleMeta.badge}>{roleMeta.label}</Badge>
+        )}
+      </td>
+      <td className="td-muted">{fmtDate(member.joined_at)}</td>
+      {isAdmin && (
+        <td>
+          {!isSelf && (
+            <button
+              className={`btn btn-xs ${member.is_active ? 'btn-ghost' : 'btn-success'}`}
+              onClick={onToggle}
+            >
+              {member.is_active ? 'Deactivate' : 'Reactivate'}
+            </button>
+          )}
+        </td>
+      )}
+    </tr>
+  )
+}
+
+/* ── INVITE MODAL ── */
+function InviteModal({ facilityId, onClose, onSuccess }) {
+  const [email,   setEmail]   = useState('')
+  const [role,    setRole]    = useState('pharmacist')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error,   setError]   = useState(null)
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+  async function handleSubmit(e) {
+    e.preventDefault(); setError(null); setLoading(true)
 
-    setError(null)
-    setLoading(true)
+    // Look up user by email in user_profiles
+    const { data: users } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', email.trim().toLowerCase())
+      .limit(1)
 
-    const cleanUserId = userId.trim()
-
-    if (!cleanUserId) {
-      setError('User ID is required.')
-      setLoading(false)
-      return
+    if (!users || users.length === 0) {
+      setError('No account found with that email. They must create a MediChain account first.')
+      setLoading(false); return
     }
 
-    const { error: insertError } = await supabase
+    const userId = users[0].id
+
+    // Check not already staff
+    const { data: existing } = await supabase
       .from('facility_staff')
-      .insert({
+      .select('id, is_active')
+      .eq('facility_id', facilityId)
+      .eq('user_id', userId)
+      .single()
+
+    if (existing) {
+      if (existing.is_active) {
+        setError('This person is already an active staff member.')
+        setLoading(false); return
+      }
+      // Reactivate
+      await supabase.from('facility_staff').update({ is_active: true, role }).eq('id', existing.id)
+    } else {
+      const { error: err } = await supabase.from('facility_staff').insert({
         facility_id: facilityId,
-        user_id: cleanUserId,
+        user_id:     userId,
         role,
-        is_active: true,
+        is_active:   true,
       })
-
-    if (insertError) {
-      setError(insertError.message)
-      setLoading(false)
-      return
+      if (err) { setError(err.message); setLoading(false); return }
     }
-
     onSuccess()
   }
 
   return (
     <Modal
       title="Add staff member"
+      subtitle="The person must already have a MediChain account"
       onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
-
-          <button
-            className="btn btn-primary"
-            form="add-staff-form"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="spinner" />
-                Adding…
-              </>
-            ) : (
-              'Add staff'
-            )}
-          </button>
-        </>
-      }
+      size="modal-sm"
+      footer={<>
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" form="invite-form" type="submit" disabled={loading}>
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Adding…</> : 'Add to facility'}
+        </button>
+      </>}
     >
-      <div className="alert-banner alert-banner-info" role="status">
-        <div className="alert-icon alert-icon-info">i</div>
-        <div className="alert-message alert-message-info">
-          For this MVP, the staff member must create an account first. Then add
-          them here using their Supabase user ID.
-        </div>
-      </div>
-
       <InlineError message={error} />
-
-      <form id="add-staff-form" className="modal-form" onSubmit={handleSubmit}>
+      <form id="invite-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
         <div className="field">
-          <label htmlFor="staffUserId">Staff user ID *</label>
+          <label>Email address *</label>
           <input
-            id="staffUserId"
-            required
-            placeholder="Paste their Supabase user UUID"
-            value={userId}
-            onChange={(event) => setUserId(event.target.value)}
+            type="email" required
+            placeholder="colleague@facility.org"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
           />
+          <div className="field-hint">Must match their registered account email exactly</div>
         </div>
-
         <div className="field">
-          <label htmlFor="staffRole">Role</label>
-          <select
-            id="staffRole"
-            value={role}
-            onChange={(event) => setRole(event.target.value)}
-          >
-            {STAFF_ROLES.map((staffRole) => (
-              <option key={staffRole.value} value={staffRole.value}>
-                {staffRole.label}
-              </option>
+          <label>Role *</label>
+          <select required value={role} onChange={e => setRole(e.target.value)}>
+            {Object.entries(ROLE_META).map(([r, m]) => (
+              <option key={r} value={r}>{m.label} — {m.desc}</option>
             ))}
           </select>
         </div>
-
-        <p className="form-help">
-          Later, replace this with an invite-by-email flow using a Supabase Edge
-          Function.
-        </p>
       </form>
     </Modal>
   )
