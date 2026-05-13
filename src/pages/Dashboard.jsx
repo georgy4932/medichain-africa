@@ -26,28 +26,14 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     setLoading(true)
-
-    await Promise.all([
-      loadStats(),
-      loadAlerts(),
-      loadTransfers(),
-    ])
-
+    await Promise.all([loadStats(), loadAlerts(), loadTransfers()])
     setLoading(false)
   }
 
   async function loadStats() {
     const { data, error } = await supabase
       .from('inventory_items')
-      .select(`
-        id,
-        quantity_available,
-        quantity_reserved,
-        reorder_level,
-        expiry_date,
-        is_active,
-        medicines(generic_name)
-      `)
+      .select('id, quantity_available, quantity_reserved, reorder_level, expiry_date, is_active')
       .eq('facility_id', facilityId)
       .eq('is_active', true)
 
@@ -80,7 +66,6 @@ export default function DashboardPage() {
     const nearExpiry = inventory.filter((item) => {
       const days = daysUntilExpiry(item.expiry_date)
       const threshold = facility?.near_expiry_threshold_days ?? 90
-
       return days !== null && days >= 0 && days <= threshold
     }).length
 
@@ -113,7 +98,7 @@ export default function DashboardPage() {
   async function loadTransfers() {
     const { data, error } = await supabase
       .from('transfer_requests')
-      .select('*, medicines(generic_name), facilities!requesting_facility_id(name)')
+      .select('*, medicines(generic_name)')
       .or(`requesting_facility_id.eq.${facilityId},supplying_facility_id.eq.${facilityId}`)
       .in('status', ['pending', 'approved', 'in_transit'])
       .order('created_at', { ascending: false })
@@ -136,13 +121,19 @@ export default function DashboardPage() {
     )
   }
 
+  const hasInventory = (stats?.total ?? 0) > 0
+  const totalRisk =
+    (stats?.lowStock ?? 0) +
+    (stats?.outOfStock ?? 0) +
+    (stats?.nearExpiry ?? 0)
+
   return (
     <div className="dashboard-page fade-up">
       <div className="page-header">
         <div>
-          <h1>Dashboard</h1>
+          <h1>Command center</h1>
           <div className="page-title-sub">
-            {facility?.name} · {facility?.city}
+            {facility?.name} · medicine visibility, risk, and transfer readiness
           </div>
         </div>
 
@@ -151,41 +142,54 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      <section className="command-strip">
+        <div>
+          <strong>
+            {hasInventory
+              ? 'Inventory monitoring is active'
+              : 'Start by adding your first stock batch'}
+          </strong>
+          <span>
+            MediChain tracks stock risk, expiry exposure, and facility transfer readiness.
+          </span>
+        </div>
+
+        <Link to="/search" className="btn btn-ghost btn-sm">
+          Search network
+        </Link>
+      </section>
+
       <section className="stats-grid">
         <StatCard
-          label="Total items"
+          label="Inventory health"
+          value={hasInventory ? 'Live' : 'No data'}
+          subtext={hasInventory ? `${stats.total} active batches monitored` : 'Add stock to activate health scoring'}
+        />
+
+        <StatCard
+          label="Stock risk"
+          value={totalRisk}
+          subtext="Low stock, out of stock, and near-expiry items"
+        />
+
+        <StatCard
+          label="Coverage"
           value={stats?.total ?? 0}
-          subtext="Active inventory batches"
-          tone="info"
+          subtext="Medicine batches currently tracked"
         />
 
         <StatCard
-          label="Low stock"
-          value={stats?.lowStock ?? 0}
-          subtext="Below reorder level"
-          tone="warning"
-        />
-
-        <StatCard
-          label="Out of stock"
-          value={stats?.outOfStock ?? 0}
-          subtext="Zero units available"
-          tone="danger"
-        />
-
-        <StatCard
-          label="Near expiry"
-          value={stats?.nearExpiry ?? 0}
-          subtext={`Within ${facility?.near_expiry_threshold_days ?? 90} days`}
-          tone="success"
+          label="Transfer flow"
+          value={transfers.length}
+          subtext="Pending, approved, or in-transit requests"
         />
       </section>
 
       <section className="dashboard-grid">
         <DashboardPanel
-          title="Active alerts"
+          title="Critical alerts"
           viewAllTo="/alerts"
-          emptyText="No active alerts. Good work."
+          emptyText="No active stock risk detected yet. Alerts will appear when stock falls below reorder level or approaches expiry."
         >
           {alerts.map((alert) => (
             <AlertRow key={alert.id} alert={alert} />
@@ -193,22 +197,43 @@ export default function DashboardPage() {
         </DashboardPanel>
 
         <DashboardPanel
+          title="Setup progress"
+          viewAllTo="/inventory"
+          emptyText=""
+        >
+          <div className="setup-progress">
+            <SetupStep label="Facility profile created" done />
+            <SetupStep label="Add first inventory batch" done={hasInventory} />
+            <SetupStep label="Review stock alerts" done={alerts.length > 0} />
+            <SetupStep label="Create or receive transfer request" done={transfers.length > 0} />
+          </div>
+        </DashboardPanel>
+
+        <DashboardPanel
           title="Active transfers"
           viewAllTo="/transfers"
-          emptyText="No pending transfer requests."
+          emptyText="No transfer workflow is active yet. Requests will appear here when facilities request or approve medicine movement."
         >
           {transfers.map((transfer) => (
             <TransferRow key={transfer.id} transfer={transfer} />
           ))}
+        </DashboardPanel>
+
+        <DashboardPanel
+          title="Recent stock movement"
+          viewAllTo="/inventory"
+          emptyText="No stock movement recorded yet. Receipts, adjustments, removals, and transfers will appear as operational history."
+        >
+          {null}
         </DashboardPanel>
       </section>
     </div>
   )
 }
 
-function StatCard({ label, value, subtext, tone }) {
+function StatCard({ label, value, subtext }) {
   return (
-    <div className={`stat-card stat-card-${tone}`}>
+    <div className="stat-card">
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
       <div className="stat-sub">{subtext}</div>
@@ -229,10 +254,17 @@ function DashboardPanel({ title, viewAllTo, emptyText, children }) {
       </div>
 
       <div className="panel-list">
-        {hasItems ? children : (
-          <p className="panel-empty">{emptyText}</p>
-        )}
+        {hasItems ? children : <p className="panel-empty">{emptyText}</p>}
       </div>
+    </div>
+  )
+}
+
+function SetupStep({ label, done }) {
+  return (
+    <div className="setup-step">
+      <span>{label}</span>
+      <strong>{done ? 'Done' : 'Pending'}</strong>
     </div>
   )
 }
@@ -244,13 +276,11 @@ function AlertRow({ alert }) {
         {getAlertLabel(alert.alert_type)}
       </StatusBadge>
 
-      <div className="panel-row-content">
+      <div>
         <div className="panel-row-title">
           {alert.medicines?.generic_name || 'Unknown medicine'}
         </div>
-        <div className="panel-row-sub">
-          {alert.message}
-        </div>
+        <div className="panel-row-sub">{alert.message}</div>
       </div>
     </div>
   )
@@ -263,7 +293,7 @@ function TransferRow({ transfer }) {
         {transfer.status?.replace('_', ' ') || 'unknown'}
       </StatusBadge>
 
-      <div className="panel-row-content">
+      <div>
         <div className="panel-row-title">
           {transfer.medicines?.generic_name || 'Unknown medicine'}
         </div>
