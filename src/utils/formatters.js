@@ -1,26 +1,50 @@
-import { format, differenceInDays, parseISO } from 'date-fns'
+import { format, differenceInDays, parseISO, isValid } from 'date-fns'
 
-export function fmtDate(dateString) {
-  if (!dateString) return '—'
-
-  return format(parseISO(dateString), 'dd MMM yyyy')
+function safeParseISO(dateStr) {
+  if (!dateStr) return null
+  try {
+    const d = parseISO(dateStr)
+    return isValid(d) ? d : null
+  } catch { return null }
 }
 
-export function fmtDateTime(dateString) {
-  if (!dateString) return '—'
-
-  return format(parseISO(dateString), 'dd MMM yyyy, HH:mm')
+export function fmtDate(dateStr) {
+  const d = safeParseISO(dateStr)
+  if (!d) return '—'
+  return format(d, 'dd MMM yyyy')
 }
 
-export function daysUntilExpiry(dateString) {
-  if (!dateString) return null
+export function fmtDateShort(dateStr) {
+  const d = safeParseISO(dateStr)
+  if (!d) return '—'
+  return format(d, 'dd MMM')
+}
 
-  return differenceInDays(parseISO(dateString), new Date())
+export function fmtDateTime(dateStr) {
+  const d = safeParseISO(dateStr)
+  if (!d) return '—'
+  return format(d, 'dd MMM yyyy · HH:mm')
+}
+
+export function fmtRelative(dateStr) {
+  const d = safeParseISO(dateStr)
+  if (!d) return '—'
+  const days = differenceInDays(new Date(), d)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7)  return `${days}d ago`
+  if (days < 30) return `${Math.round(days / 7)}w ago`
+  return fmtDate(dateStr)
+}
+
+export function daysUntilExpiry(dateStr) {
+  const d = safeParseISO(dateStr)
+  if (!d) return null
+  return differenceInDays(d, new Date())
 }
 
 export function fmtCurrency(amount, currency = 'NGN') {
-  if (amount == null) return '—'
-
+  if (amount == null || amount === '') return '—'
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency,
@@ -28,60 +52,125 @@ export function fmtCurrency(amount, currency = 'NGN') {
   }).format(amount)
 }
 
-export function fmtNumber(value) {
-  if (value == null) return '—'
-
-  return new Intl.NumberFormat('en-NG').format(value)
+export function fmtNumber(n) {
+  if (n == null) return '—'
+  return new Intl.NumberFormat().format(n)
 }
 
-/*
-|--------------------------------------------------------------------------
-| STATUS HELPERS
-|--------------------------------------------------------------------------
-*/
-
-export function getExpiryStatus(dateString) {
-  const days = daysUntilExpiry(dateString)
-
-  if (days == null) return 'neutral'
-  if (days < 0) return 'danger'
-  if (days <= 30) return 'danger'
-  if (days <= 90) return 'warning'
-
-  return 'success'
+export function expiryBadgeClass(dateStr) {
+  const days = daysUntilExpiry(dateStr)
+  if (days == null) return 'badge-neutral'
+  if (days < 0)    return 'badge-danger'
+  if (days <= 30)  return 'badge-danger'
+  if (days <= 90)  return 'badge-warning'
+  return 'badge-success'
 }
 
-export function getTransferStatus(status) {
-  const statusMap = {
-    pending: 'warning',
-    approved: 'info',
-    rejected: 'danger',
-    in_transit: 'info',
-    fulfilled: 'success',
-    cancelled: 'neutral',
+export function expiryTextClass(dateStr) {
+  const days = daysUntilExpiry(dateStr)
+  if (days == null) return ''
+  if (days < 0)    return 'text-danger'
+  if (days <= 30)  return 'text-danger'
+  if (days <= 90)  return 'text-warning'
+  return 'text-success'
+}
+
+export function fmtExpiryLabel(dateStr) {
+  const days = daysUntilExpiry(dateStr)
+  if (days == null)  return '—'
+  if (days < 0)      return `Expired ${Math.abs(days)}d ago`
+  if (days === 0)    return 'Expires today'
+  if (days === 1)    return 'Expires tomorrow'
+  if (days <= 90)    return `${days}d left`
+  return fmtDate(dateStr)
+}
+
+export function transferStatusClass(status) {
+  const map = {
+    pending:    'badge-warning',
+    approved:   'badge-primary',
+    rejected:   'badge-danger',
+    in_transit: 'badge-info',
+    fulfilled:  'badge-success',
+    cancelled:  'badge-neutral',
   }
-
-  return statusMap[status] ?? 'neutral'
+  return map[status] ?? 'badge-neutral'
 }
 
-export function getAlertLabel(type) {
-  const labelMap = {
-    low_stock: 'Low Stock',
+export function transferStatusLabel(status) {
+  const map = {
+    pending:    'Pending',
+    approved:   'Approved',
+    rejected:   'Rejected',
+    in_transit: 'In Transit',
+    fulfilled:  'Fulfilled',
+    cancelled:  'Cancelled',
+  }
+  return map[status] ?? status
+}
+
+export function alertTypeLabel(type) {
+  const map = {
+    low_stock:    'Low Stock',
     out_of_stock: 'Out of Stock',
-    near_expiry: 'Near Expiry',
-    overstock: 'Overstock',
+    near_expiry:  'Near Expiry',
+    overstock:    'Overstock',
   }
-
-  return labelMap[type] ?? type
+  return map[type] ?? type
 }
 
-export function getAlertStatus(type) {
-  const statusMap = {
-    low_stock: 'warning',
-    out_of_stock: 'danger',
-    near_expiry: 'warning',
-    overstock: 'info',
+export function alertTypeClass(type) {
+  const map = {
+    low_stock:    'badge-warning',
+    out_of_stock: 'badge-danger',
+    near_expiry:  'badge-warning',
+    overstock:    'badge-info',
   }
+  return map[type] ?? 'badge-neutral'
+}
 
-  return statusMap[type] ?? 'neutral'
+export function alertDotClass(type) {
+  const map = {
+    low_stock:    'warning',
+    out_of_stock: 'danger',
+    near_expiry:  'warning',
+    overstock:    'muted',
+  }
+  return map[type] ?? 'muted'
+}
+
+export function urgencyClass(urgency) {
+  if (urgency === 'critical') return 'badge-danger'
+  if (urgency === 'urgent')   return 'badge-warning'
+  return 'badge-neutral'
+}
+
+export function stockStatusClass(available, reorderLevel) {
+  if (available <= 0)           return 'badge-danger'
+  if (available < reorderLevel) return 'badge-warning'
+  return 'badge-success'
+}
+
+export function stockStatusLabel(available, reorderLevel) {
+  if (available <= 0)           return 'Out of stock'
+  if (available < reorderLevel) return 'Low stock'
+  return 'In stock'
+}
+
+export function initials(name) {
+  if (!name) return '?'
+  return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+}
+
+export function facilityTypeLabel(type) {
+  const map = {
+    pharmacy:              'Pharmacy',
+    hospital_pharmacy:     'Hospital Pharmacy',
+    clinic:                'Clinic',
+    primary_health_center: 'PHC',
+    wholesaler:            'Wholesaler',
+    distributor:           'Distributor',
+    government_store:      'Gov. Medical Store',
+  }
+  return map[type] ?? type
 }
