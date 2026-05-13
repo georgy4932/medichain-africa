@@ -1,697 +1,406 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useFacility } from '../hooks/useFacility'
-import { fmtDate, getTransferStatus } from '../utils/formatters'
-import StatusBadge from '../components/shared/StatusBadge'
-import Modal from '../components/shared/Modal'
-import EmptyState from '../components/shared/EmptyState'
-import InlineError from '../components/shared/InlineError'
+import {
+  fmtDate, fmtRelative, fmtNumber,
+  transferStatusClass, transferStatusLabel, urgencyClass,
+} from '../utils/formatters'
+import { Modal, InlineError, EmptyState, Badge, SpinnerCenter, TransferPipeline, ContextCard } from '../components/shared'
 
-const TABS = ['all', 'incoming', 'outgoing', 'pending']
-
-const URGENCY_VARIANTS = {
-  normal: 'neutral',
-  urgent: 'warning',
-  critical: 'danger',
-}
+const TABS = [
+  { key: 'all',      label: 'All' },
+  { key: 'incoming', label: 'Incoming' },
+  { key: 'outgoing', label: 'Outgoing' },
+  { key: 'active',   label: 'Active' },
+]
 
 export default function TransfersPage() {
   const { facilityId } = useFacility()
-  const location = useLocation()
+  const location       = useLocation()
+  const prefill        = location.state?.prefill ?? null
 
   const [transfers, setTransfers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('all')
-  const [showNewModal, setShowNewModal] = useState(false)
-  const [actionModal, setActionModal] = useState(null)
+  const [loading,   setLoading]   = useState(true)
+  const [tab,       setTab]       = useState('all')
+  const [newOpen,   setNewOpen]   = useState(!!prefill)
+  const [action,    setAction]    = useState(null)
 
-  const prefill = location.state?.prefill ?? null
+  useEffect(() => { if (facilityId) load() }, [facilityId, tab])
 
-  const loadTransfers = useCallback(async () => {
-    if (!facilityId) return
-
+  async function load() {
     setLoading(true)
-
-    let query = supabase
+    let q = supabase
       .from('transfer_requests')
-      .select(`
-        *,
-        medicines(generic_name, strength),
-        requesting:requesting_facility_id(name, city),
-        supplying:supplying_facility_id(name, city)
-      `)
+      .select(`id,status,urgency,quantity_requested,quantity_approved,quantity_fulfilled,reason,notes,created_at,
+        medicines(generic_name,strength),
+        requesting:requesting_facility_id(id,name,city),
+        supplying:supplying_facility_id(id,name,city)`)
       .or(`requesting_facility_id.eq.${facilityId},supplying_facility_id.eq.${facilityId}`)
       .order('created_at', { ascending: false })
 
-    if (tab === 'incoming') {
-      query = query.eq('supplying_facility_id', facilityId)
-    }
+    if (tab === 'incoming') q = q.eq('supplying_facility_id', facilityId)
+    if (tab === 'outgoing') q = q.eq('requesting_facility_id', facilityId)
+    if (tab === 'active')   q = q.in('status', ['pending','approved','in_transit'])
 
-    if (tab === 'outgoing') {
-      query = query.eq('requesting_facility_id', facilityId)
-    }
-
-    if (tab === 'pending') {
-      query = query.eq('status', 'pending')
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Error loading transfers:', error.message)
-      setTransfers([])
-      setLoading(false)
-      return
-    }
-
+    const { data } = await q
     setTransfers(data ?? [])
     setLoading(false)
-  }, [facilityId, tab])
-
-  useEffect(() => {
-    loadTransfers()
-  }, [loadTransfers])
-
-  useEffect(() => {
-    if (prefill) {
-      setShowNewModal(true)
-    }
-  }, [prefill])
+  }
 
   return (
-    <div className="transfers-page fade-up">
-      <div className="page-header">
+    <div>
+      <div className="page-top">
         <div>
-          <h1>Stock transfers</h1>
-          <div className="page-title-sub">
-            Request and manage medicine transfers between facilities
-          </div>
+          <div className="page-eyebrow">TRANSFER REQUESTS</div>
+          <div className="page-title">Stock Transfers</div>
+          <div className="page-subtitle">Request, manage, and track medicine transfers between facilities</div>
         </div>
-
-        <button className="btn btn-primary" onClick={() => setShowNewModal(true)}>
-          New request
-        </button>
+        <div className="page-actions">
+          <button className="btn btn-primary" onClick={() => setNewOpen(true)}>+ New request</button>
+        </div>
       </div>
 
-      <div className="filter-group">
-        {TABS.map((item) => (
-          <button
-            key={item}
-            className={`btn btn-sm ${tab === item ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setTab(item)}
-          >
-            {item.charAt(0).toUpperCase() + item.slice(1)}
+      {/* Tabs */}
+      <div className="filter-chips" style={{ marginBottom: 16 }}>
+        {TABS.map(t => (
+          <button key={t.key} className={`chip ${tab === t.key ? 'active' : ''}`} onClick={() => setTab(t.key)}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {loading ? (
-        <div className="page-loading">
-          <div className="spinner spinner-lg" />
-        </div>
-      ) : transfers.length === 0 ? (
+      {loading ? <SpinnerCenter /> : transfers.length === 0 ? (
         <EmptyState
-          icon="⇄"
-          title="No transfers"
-          message="No transfer requests found."
+          title="No transfer requests"
+          description="Transfer requests allow you to move medicine stock between facilities in the network."
+          actions={<button className="btn btn-primary btn-sm" onClick={() => setNewOpen(true)}>Create request</button>}
         />
       ) : (
-        <div className="transfer-list">
-          {transfers.map((transfer) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {transfers.map(t => (
             <TransferCard
-              key={transfer.id}
-              transfer={transfer}
+              key={t.id}
+              transfer={t}
               facilityId={facilityId}
-              onAction={setActionModal}
+              onAction={act => setAction({ type: act, transfer: t })}
             />
           ))}
         </div>
       )}
 
-      {showNewModal && (
+      {newOpen && (
         <NewTransferModal
           facilityId={facilityId}
           prefill={prefill}
-          onClose={() => setShowNewModal(false)}
-          onSuccess={() => {
-            setShowNewModal(false)
-            loadTransfers()
-          }}
+          onClose={() => setNewOpen(false)}
+          onSuccess={() => { setNewOpen(false); load() }}
         />
       )}
 
-      {actionModal && (
-        <TransferActionModal
-          action={actionModal}
+      {action && (
+        <ActionModal
+          action={action}
           facilityId={facilityId}
-          onClose={() => setActionModal(null)}
-          onSuccess={() => {
-            setActionModal(null)
-            loadTransfers()
-          }}
+          onClose={() => setAction(null)}
+          onSuccess={() => { setAction(null); load() }}
         />
       )}
     </div>
   )
 }
 
-function TransferCard({ transfer, facilityId, onAction }) {
-  const isRequesting = transfer.requesting_facility_id === facilityId
-  const isSupplying = transfer.supplying_facility_id === facilityId
-
-  const oppositeFacility = isRequesting
-    ? transfer.supplying
-    : transfer.requesting
+function TransferCard({ transfer: t, facilityId, onAction }) {
+  const isRequesting = t.requesting?.id === facilityId
+  const isSupplying  = t.supplying?.id  === facilityId
 
   return (
-    <article className="transfer-card">
-      <div className="transfer-card-content">
-        <div className="transfer-badges">
-          <StatusBadge variant={getTransferStatus(transfer.status)}>
-            {transfer.status?.replace('_', ' ') || 'unknown'}
-          </StatusBadge>
-
-          {transfer.urgency && transfer.urgency !== 'normal' && (
-            <StatusBadge variant={URGENCY_VARIANTS[transfer.urgency] || 'neutral'}>
-              {transfer.urgency}
-            </StatusBadge>
-          )}
+    <div className="card card-pad">
+      {/* Top row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <Badge className={transferStatusClass(t.status)} dot>{transferStatusLabel(t.status)}</Badge>
+          {t.urgency !== 'normal' && <Badge className={urgencyClass(t.urgency)}>{t.urgency}</Badge>}
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtRelative(t.created_at)}</span>
         </div>
+        <TransferPipeline status={t.status} />
+      </div>
 
-        <div className="transfer-title">
-          {transfer.medicines?.generic_name || 'Unknown medicine'}
-          {transfer.medicines?.strength ? ` · ${transfer.medicines.strength}` : ''}
+      {/* Medicine + facilities */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+          {t.medicines?.generic_name} · {t.medicines?.strength}
         </div>
-
-        <div className="transfer-route">
-          {isRequesting ? 'You requested from ' : 'Request from '}
-          <strong>{oppositeFacility?.name || 'Unknown facility'}</strong>
-          {!isRequesting && oppositeFacility?.city ? ` (${oppositeFacility.city})` : ''}
+        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+          <span>
+            <span style={{ color: 'var(--text-disabled)' }}>From</span>{' '}
+            <strong style={{ color: 'var(--text-secondary)' }}>{t.supplying?.name}</strong>
+            {t.supplying?.city && ` · ${t.supplying.city}`}
+          </span>
+          <span style={{ color: 'var(--text-disabled)' }}>→</span>
+          <span>
+            <span style={{ color: 'var(--text-disabled)' }}>To</span>{' '}
+            <strong style={{ color: 'var(--text-secondary)' }}>{t.requesting?.name}</strong>
+            {t.requesting?.city && ` · ${t.requesting.city}`}
+          </span>
         </div>
+      </div>
 
-        <div className="transfer-meta">
-          Requested: {transfer.quantity_requested}
-          {transfer.quantity_approved ? ` · Approved: ${transfer.quantity_approved}` : ''}
-          {transfer.quantity_fulfilled ? ` · Fulfilled: ${transfer.quantity_fulfilled}` : ''}
-          {' · '}
-          {fmtDate(transfer.created_at)}
+      {/* Quantities */}
+      <div style={{ display: 'flex', gap: 20, fontSize: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+        <div>
+          <span style={{ color: 'var(--text-muted)' }}>Requested </span>
+          <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{fmtNumber(t.quantity_requested)}</span>
         </div>
-
-        {transfer.reason && (
-          <div className="transfer-reason">
-            Reason: {transfer.reason}
+        {t.quantity_approved && (
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>Approved </span>
+            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{fmtNumber(t.quantity_approved)}</span>
+          </div>
+        )}
+        {t.quantity_fulfilled && (
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>Fulfilled </span>
+            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{fmtNumber(t.quantity_fulfilled)}</span>
           </div>
         )}
       </div>
 
-      <div className="transfer-actions">
-        {isSupplying && transfer.status === 'pending' && (
-          <>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => onAction({ type: 'approve', transfer })}
-            >
-              Approve
-            </button>
+      {t.reason && (
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 12, fontStyle: 'italic' }}>
+          "{t.reason}"
+        </div>
+      )}
 
-            <button
-              className="btn btn-danger btn-sm"
-              onClick={() => onAction({ type: 'reject', transfer })}
-            >
-              Reject
-            </button>
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {isSupplying && t.status === 'pending' && (
+          <>
+            <button className="btn btn-primary btn-sm" onClick={() => onAction('approve')}>Approve</button>
+            <button className="btn btn-danger btn-sm" onClick={() => onAction('reject')}>Reject</button>
           </>
         )}
-
-        {isSupplying && transfer.status === 'approved' && (
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => onAction({ type: 'in_transit', transfer })}
-          >
-            Mark in transit
-          </button>
+        {isSupplying && t.status === 'approved' && (
+          <>
+            <button className="btn btn-ghost btn-sm" onClick={() => onAction('in_transit')}>Mark in transit</button>
+            <button className="btn btn-primary btn-sm" onClick={() => onAction('fulfill')}>Fulfill</button>
+          </>
         )}
-
-        {isSupplying && ['approved', 'in_transit'].includes(transfer.status) && (
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => onAction({ type: 'fulfill', transfer })}
-          >
-            Fulfill
-          </button>
+        {isSupplying && t.status === 'in_transit' && (
+          <button className="btn btn-primary btn-sm" onClick={() => onAction('fulfill')}>Confirm fulfillment</button>
         )}
-
-        {isRequesting && ['pending', 'approved', 'in_transit'].includes(transfer.status) && (
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => onAction({ type: 'cancel', transfer })}
-          >
-            Cancel
-          </button>
+        {isRequesting && ['pending','approved','in_transit'].includes(t.status) && (
+          <button className="btn btn-ghost btn-sm" onClick={() => onAction('cancel')}>Cancel request</button>
         )}
       </div>
-    </article>
+    </div>
   )
 }
 
+/* ── NEW TRANSFER MODAL ── */
 function NewTransferModal({ facilityId, prefill, onClose, onSuccess }) {
   const [facilities, setFacilities] = useState([])
-  const [medicines, setMedicines] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const [form, setForm] = useState({
+  const [medicines,  setMedicines]  = useState([])
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState(null)
+  const [f, setF] = useState({
     supplying_facility_id: prefill?.supplying_facility_id ?? '',
-    medicine_id: prefill?.medicine_id ?? '',
-    quantity_requested: '',
-    urgency: 'normal',
-    reason: '',
+    medicine_id:           prefill?.medicine_id           ?? '',
+    quantity_requested:    '',
+    urgency:               'normal',
+    reason:                '',
   })
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
   useEffect(() => {
-    async function loadFormOptions() {
-      const { data: facilityData, error: facilityError } = await supabase
-        .from('facilities')
-        .select('id, name, city, country')
-        .eq('is_active', true)
-        .order('name')
-
-      if (facilityError) {
-        console.error('Error loading facilities:', facilityError.message)
-      } else {
-        setFacilities((facilityData ?? []).filter((facility) => facility.id !== facilityId))
-      }
-
-      const { data: medicineData, error: medicineError } = await supabase
-        .from('medicines')
-        .select('id, generic_name, strength')
-        .eq('is_active', true)
-        .order('generic_name')
-
-      if (medicineError) {
-        console.error('Error loading medicines:', medicineError.message)
-      } else {
-        setMedicines(medicineData ?? [])
-      }
-    }
-
-    loadFormOptions()
+    supabase.from('facilities').select('id,name,city,country').eq('is_active', true)
+      .then(({ data }) => setFacilities((data ?? []).filter(x => x.id !== facilityId)))
+    supabase.from('medicines').select('id,generic_name,strength').eq('is_active', true).order('generic_name')
+      .then(({ data }) => setMedicines(data ?? []))
   }, [facilityId])
 
-  function update(field, value) {
-    setForm((currentForm) => ({
-      ...currentForm,
-      [field]: value,
-    }))
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-
-    setError(null)
-    setLoading(true)
-
-    const { data: userData, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !userData?.user?.id) {
-      setError('Your session has expired. Please sign in again.')
-      setLoading(false)
-      return
-    }
-
-    const { error: transferError } = await supabase
-      .from('transfer_requests')
-      .insert({
-        requesting_facility_id: facilityId,
-        supplying_facility_id: form.supplying_facility_id,
-        medicine_id: form.medicine_id,
-        quantity_requested: Number(form.quantity_requested),
-        urgency: form.urgency,
-        reason: form.reason.trim() || null,
-        requested_by: userData.user.id,
-        status: 'pending',
-      })
-
-    if (transferError) {
-      setError(transferError.message)
-      setLoading(false)
-      return
-    }
-
+  async function handleSubmit(e) {
+    e.preventDefault(); setError(null); setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error: err } = await supabase.from('transfer_requests').insert({
+      requesting_facility_id: facilityId,
+      supplying_facility_id:  f.supplying_facility_id,
+      medicine_id:            f.medicine_id,
+      quantity_requested:     Number(f.quantity_requested),
+      urgency:                f.urgency,
+      reason:                 f.reason || null,
+      requested_by:           user.id,
+      status:                 'pending',
+    })
+    if (err) { setError(err.message); setLoading(false); return }
     onSuccess()
   }
 
   return (
-    <Modal
-      title="New transfer request"
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
-
-          <button
-            className="btn btn-primary"
-            form="new-transfer-form"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="spinner" />
-                Submitting…
-              </>
-            ) : (
-              'Submit request'
-            )}
-          </button>
-        </>
-      }
+    <Modal title="New transfer request" subtitle="Stock will not be reserved until the supplying facility approves" onClose={onClose}
+      footer={<>
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" form="new-tr-form" type="submit" disabled={loading}>
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Submitting…</> : 'Submit request'}
+        </button>
+      </>}
     >
       {prefill && (
-        <div className="alert-banner alert-banner-info" role="status">
-          <div className="alert-icon alert-icon-info">i</div>
-          <div className="alert-message alert-message-info">
-            Requesting from <strong>{prefill.supplying_name}</strong>
-          </div>
+        <div className="inline-alert alert-info">
+          <span className="inline-alert-icon">ℹ</span>
+          <span>Requesting from <strong>{prefill.supplying_name}</strong></span>
         </div>
       )}
-
       <InlineError message={error} />
-
-      <form id="new-transfer-form" className="modal-form" onSubmit={handleSubmit}>
+      <form id="new-tr-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="field">
-          <label htmlFor="supplyingFacility">Supplying facility *</label>
-          <select
-            id="supplyingFacility"
-            required
-            value={form.supplying_facility_id}
-            onChange={(event) => update('supplying_facility_id', event.target.value)}
-          >
+          <label>Supplying facility *</label>
+          <select required value={f.supplying_facility_id} onChange={e => set('supplying_facility_id', e.target.value)}>
             <option value="">Select facility…</option>
-            {facilities.map((facility) => (
-              <option key={facility.id} value={facility.id}>
-                {facility.name} — {facility.city}
-              </option>
-            ))}
+            {facilities.map(x => <option key={x.id} value={x.id}>{x.name} — {x.city}</option>)}
           </select>
         </div>
-
         <div className="field">
-          <label htmlFor="transferMedicine">Medicine *</label>
-          <select
-            id="transferMedicine"
-            required
-            value={form.medicine_id}
-            onChange={(event) => update('medicine_id', event.target.value)}
-          >
+          <label>Medicine *</label>
+          <select required value={f.medicine_id} onChange={e => set('medicine_id', e.target.value)}>
             <option value="">Select medicine…</option>
-            {medicines.map((medicine) => (
-              <option key={medicine.id} value={medicine.id}>
-                {medicine.generic_name} · {medicine.strength}
-              </option>
-            ))}
+            {medicines.map(m => <option key={m.id} value={m.id}>{m.generic_name} · {m.strength}</option>)}
           </select>
         </div>
-
         <div className="grid-2">
           <div className="field">
-            <label htmlFor="quantityRequested">Quantity needed *</label>
-            <input
-              id="quantityRequested"
-              type="number"
-              required
-              min={1}
-              value={form.quantity_requested}
-              onChange={(event) => update('quantity_requested', event.target.value)}
-            />
+            <label>Quantity needed *</label>
+            <input type="number" required min={1} value={f.quantity_requested} onChange={e => set('quantity_requested', e.target.value)} />
           </div>
-
           <div className="field">
-            <label htmlFor="urgency">Urgency</label>
-            <select
-              id="urgency"
-              value={form.urgency}
-              onChange={(event) => update('urgency', event.target.value)}
-            >
+            <label>Urgency</label>
+            <select value={f.urgency} onChange={e => set('urgency', e.target.value)}>
               <option value="normal">Normal</option>
               <option value="urgent">Urgent</option>
               <option value="critical">Critical</option>
             </select>
           </div>
         </div>
-
         <div className="field">
-          <label htmlFor="transferReason">Reason for request</label>
-          <textarea
-            id="transferReason"
-            value={form.reason}
-            onChange={(event) => update('reason', event.target.value)}
-            placeholder="Explain why this stock is needed"
-          />
+          <label>Reason for request</label>
+          <textarea value={f.reason} onChange={e => set('reason', e.target.value)} placeholder="Why is this stock needed? (Stockout, patient demand, etc.)" />
         </div>
       </form>
     </Modal>
   )
 }
 
-function TransferActionModal({ action, facilityId, onClose, onSuccess }) {
-  const { type, transfer } = action
-
+/* ── ACTION MODALS ── */
+function ActionModal({ action: { type, transfer }, facilityId, onClose, onSuccess }) {
   const [inventoryItems, setInventoryItems] = useState([])
-  const [form, setForm] = useState({
-    inventory_item_id: '',
-    quantity: '',
-    notes: '',
-  })
+  const [f,       setF]       = useState({ inventory_item_id: '', quantity: '', notes: '' })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    async function loadInventoryItems() {
-      if (type !== 'approve') return
-
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('id, batch_number, quantity_available, quantity_reserved, expiry_date')
+    if (type === 'approve') {
+      supabase.from('inventory_items')
+        .select('id,batch_number,quantity_available,quantity_reserved,expiry_date')
         .eq('facility_id', facilityId)
-        .eq('medicine_id', transfer.medicine_id)
+        .eq('medicine_id', transfer.medicines?.id ?? transfer.medicine_id)
         .eq('is_active', true)
-        .order('expiry_date', { ascending: true })
-
-      if (error) {
-        console.error('Error loading inventory items:', error.message)
-        setInventoryItems([])
-        return
-      }
-
-      setInventoryItems(data ?? [])
+        .then(({ data }) => setInventoryItems(data ?? []))
     }
+  }, [type])
 
-    loadInventoryItems()
-  }, [type, facilityId, transfer.medicine_id])
-
-  function update(field, value) {
-    setForm((currentForm) => ({
-      ...currentForm,
-      [field]: value,
-    }))
+  const TITLES = {
+    approve:    'Approve transfer request',
+    reject:     'Reject transfer request',
+    cancel:     'Cancel transfer request',
+    in_transit: 'Mark transfer as in transit',
+    fulfill:    'Confirm transfer fulfillment',
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+  async function handleSubmit(e) {
+    e.preventDefault(); setError(null); setLoading(true)
 
-    setError(null)
-    setLoading(true)
-
-    let result
-
+    let err
     if (type === 'approve') {
-      result = await supabase.rpc('approve_transfer_request', {
-        p_request_id: transfer.id,
-        p_quantity_approved: Number(form.quantity),
-        p_inventory_item_id: form.inventory_item_id,
-      })
+      const res = await supabase.rpc('approve_transfer_request', {
+        p_request_id:        transfer.id,
+        p_quantity_approved: Number(f.quantity),
+        p_inventory_item_id: f.inventory_item_id,
+      }); err = res.error
+    } else if (type === 'reject') {
+      const res = await supabase.rpc('reject_transfer_request', { p_request_id: transfer.id, p_notes: f.notes || null }); err = res.error
+    } else if (type === 'cancel') {
+      const res = await supabase.rpc('cancel_transfer_request', { p_request_id: transfer.id, p_notes: f.notes || null }); err = res.error
+    } else if (type === 'in_transit') {
+      const res = await supabase.rpc('mark_transfer_in_transit', { p_request_id: transfer.id, p_notes: f.notes || null }); err = res.error
+    } else if (type === 'fulfill') {
+      const res = await supabase.rpc('fulfill_transfer_request', {
+        p_request_id:         transfer.id,
+        p_quantity_fulfilled: Number(f.quantity),
+        p_notes:              f.notes || null,
+      }); err = res.error
     }
 
-    if (type === 'reject') {
-      result = await supabase.rpc('reject_transfer_request', {
-        p_request_id: transfer.id,
-        p_notes: form.notes.trim() || null,
-      })
-    }
-
-    if (type === 'cancel') {
-      result = await supabase.rpc('cancel_transfer_request', {
-        p_request_id: transfer.id,
-        p_notes: form.notes.trim() || null,
-      })
-    }
-
-    if (type === 'in_transit') {
-      result = await supabase.rpc('mark_transfer_in_transit', {
-        p_request_id: transfer.id,
-        p_notes: form.notes.trim() || null,
-      })
-    }
-
-    if (type === 'fulfill') {
-      result = await supabase.rpc('fulfill_transfer_request', {
-        p_request_id: transfer.id,
-        p_quantity_fulfilled: Number(form.quantity),
-        p_notes: form.notes.trim() || null,
-      })
-    }
-
-    if (result?.error) {
-      setError(result.error.message)
-      setLoading(false)
-      return
-    }
-
+    if (err) { setError(err.message); setLoading(false); return }
     onSuccess()
   }
 
-  const titleMap = {
-    approve: 'Approve transfer request',
-    reject: 'Reject transfer request',
-    cancel: 'Cancel transfer request',
-    in_transit: 'Mark as in transit',
-    fulfill: 'Fulfill transfer request',
-  }
-
-  const buttonLabelMap = {
-    approve: 'Approve',
-    reject: 'Reject',
-    cancel: 'Cancel request',
-    in_transit: 'Mark in transit',
-    fulfill: 'Confirm fulfillment',
-  }
-
-  const buttonClassMap = {
-    approve: 'btn-primary',
-    reject: 'btn-danger',
-    cancel: 'btn-danger',
-    in_transit: 'btn-secondary',
-    fulfill: 'btn-primary',
+  const BTN = {
+    approve: { label: 'Approve', cls: 'btn-primary' },
+    reject:  { label: 'Reject',  cls: 'btn-danger' },
+    cancel:  { label: 'Cancel request', cls: 'btn-danger' },
+    in_transit: { label: 'Mark in transit', cls: 'btn-secondary' },
+    fulfill: { label: 'Confirm fulfillment', cls: 'btn-primary' },
   }
 
   return (
-    <Modal
-      title={titleMap[type]}
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-ghost" onClick={onClose}>
-            Back
-          </button>
-
-          <button
-            className={`btn ${buttonClassMap[type]}`}
-            form="transfer-action-form"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="spinner" />
-                Processing…
-              </>
-            ) : (
-              buttonLabelMap[type]
-            )}
-          </button>
-        </>
-      }
+    <Modal title={TITLES[type]} onClose={onClose} size="modal-sm"
+      footer={<>
+        <button className="btn btn-ghost" onClick={onClose}>Back</button>
+        <button className={`btn ${BTN[type].cls}`} form="action-form" type="submit" disabled={loading}>
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: type === 'approve' || type === 'fulfill' ? '#07111f' : undefined }} /> Processing…</> : BTN[type].label}
+        </button>
+      </>}
     >
-      <div className="item-summary-card">
-        <div className="item-summary-title">
-          {transfer.medicines?.generic_name || 'Unknown medicine'}
-          {transfer.medicines?.strength ? ` · ${transfer.medicines.strength}` : ''}
-        </div>
-
-        <div className="item-summary-sub">
-          Requested: {transfer.quantity_requested} units
-          {transfer.quantity_approved ? ` · Approved: ${transfer.quantity_approved}` : ''}
-        </div>
-      </div>
-
+      <ContextCard
+        title={`${transfer.medicines?.generic_name} · ${transfer.medicines?.strength}`}
+        meta={`Requested: ${fmtNumber(transfer.quantity_requested)} units${transfer.quantity_approved ? ` · Approved: ${fmtNumber(transfer.quantity_approved)}` : ''}`}
+      />
       <InlineError message={error} />
-
-      <form id="transfer-action-form" className="modal-form" onSubmit={handleSubmit}>
+      <form id="action-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {type === 'approve' && (
           <>
             <div className="field">
-              <label htmlFor="inventoryBatch">Select inventory batch *</label>
-              <select
-                id="inventoryBatch"
-                required
-                value={form.inventory_item_id}
-                onChange={(event) => update('inventory_item_id', event.target.value)}
-              >
+              <label>Select inventory batch to reserve *</label>
+              <select required value={f.inventory_item_id} onChange={e => setF(p => ({ ...p, inventory_item_id: e.target.value }))}>
                 <option value="">Choose batch…</option>
-                {inventoryItems.map((item) => {
-                  const unreserved =
-                    Number(item.quantity_available ?? 0) -
-                    Number(item.quantity_reserved ?? 0)
-
-                  return (
-                    <option key={item.id} value={item.id}>
-                      Batch {item.batch_number} — {unreserved} unreserved · expires{' '}
-                      {fmtDate(item.expiry_date)}
-                    </option>
-                  )
-                })}
+                {inventoryItems.map(i => (
+                  <option key={i.id} value={i.id}>
+                    Batch {i.batch_number} · {fmtNumber(i.quantity_available - i.quantity_reserved)} unreserved · exp {fmtDate(i.expiry_date)}
+                  </option>
+                ))}
               </select>
             </div>
-
             <div className="field">
-              <label htmlFor="approveQuantity">Quantity to approve *</label>
-              <input
-                id="approveQuantity"
-                type="number"
-                required
-                min={1}
-                max={transfer.quantity_requested}
-                value={form.quantity}
-                onChange={(event) => update('quantity', event.target.value)}
-              />
+              <label>Quantity to approve *</label>
+              <input type="number" required min={1} max={transfer.quantity_requested}
+                value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: e.target.value }))} />
+              <div className="field-hint">Max: {transfer.quantity_requested} (requested)</div>
             </div>
           </>
         )}
-
         {type === 'fulfill' && (
           <div className="field">
-            <label htmlFor="fulfilledQuantity">Quantity fulfilled *</label>
-            <input
-              id="fulfilledQuantity"
-              type="number"
-              required
-              min={1}
-              max={transfer.quantity_approved}
-              value={form.quantity}
-              onChange={(event) => update('quantity', event.target.value)}
-            />
+            <label>Quantity fulfilled *</label>
+            <input type="number" required min={1} max={transfer.quantity_approved}
+              value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: e.target.value }))} />
+            <div className="field-hint">Max: {transfer.quantity_approved} (approved)</div>
           </div>
         )}
-
-        {['reject', 'cancel', 'in_transit'].includes(type) && (
+        {['reject','cancel','in_transit'].includes(type) && (
           <div className="field">
-            <label htmlFor="actionNotes">
-              Notes {type === 'reject' ? '(reason for rejection)' : ''}
-            </label>
-            <textarea
-              id="actionNotes"
-              value={form.notes}
-              onChange={(event) => update('notes', event.target.value)}
-              placeholder={
-                type === 'reject'
-                  ? 'Explain why this request is being rejected'
-                  : 'Optional notes'
-              }
-            />
+            <label>Notes {type === 'reject' ? '(reason for rejection)' : '(optional)'}</label>
+            <textarea value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))}
+              placeholder={type === 'reject' ? 'Explain why this request cannot be fulfilled' : 'Any additional notes'} />
           </div>
         )}
       </form>
