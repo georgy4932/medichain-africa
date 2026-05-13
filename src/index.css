@@ -2,6 +2,7 @@
 
 @import './styles/layout.css';
 @import './styles/dashboard.css';
+@import './styles/inventory.css';
 @import './styles/onboarding.css';
 @import './styles/forms.css';
 @import './styles/tables.css';
