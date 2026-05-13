@@ -1,0 +1,77 @@
+ .inventory-page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(13, 26, 43, 0.72);
+  border: 1px solid var(--border-soft);
+}
+
+.inventory-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.table-secondary-cell {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.reserved-note {
+  margin-top: 4px;
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.reorder-warning {
+  color: var(--warning);
+  font-weight: 800;
+}
+
+.reorder-normal {
+  color: var(--text-secondary);
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.item-summary-card {
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid var(--border-soft);
+}
+
+.item-summary-title {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.item-summary-sub {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.checkbox-row input {
+  width: auto;
+  min-height: auto;
+}
