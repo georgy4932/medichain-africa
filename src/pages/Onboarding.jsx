@@ -2,284 +2,210 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import InlineError from '../components/shared/InlineError'
+import { InlineError } from '../components/shared'
 
 const FACILITY_TYPES = [
-  { value: 'pharmacy', label: 'Independent Pharmacy' },
-  { value: 'hospital_pharmacy', label: 'Hospital Pharmacy' },
-  { value: 'clinic', label: 'Clinic' },
-  { value: 'primary_health_center', label: 'Primary Health Center' },
-  { value: 'wholesaler', label: 'Wholesaler' },
-  { value: 'distributor', label: 'Distributor' },
-  { value: 'government_store', label: 'Government Medical Store' },
+  { value: 'pharmacy',             label: 'Independent Pharmacy' },
+  { value: 'hospital_pharmacy',    label: 'Hospital Pharmacy' },
+  { value: 'clinic',               label: 'Clinic' },
+  { value: 'primary_health_center',label: 'Primary Health Center' },
+  { value: 'wholesaler',           label: 'Wholesaler / Distributor' },
+  { value: 'government_store',     label: 'Government Medical Store' },
 ]
 
-const CURRENCIES = ['NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'TZS', 'ETB', 'XOF', 'USD']
+const CURRENCIES = ['NGN','GHS','KES','ZAR','UGX','TZS','ETB','USD']
+
+const STEPS = [
+  { key: 'identity',   label: 'Facility Identity' },
+  { key: 'location',   label: 'Location' },
+  { key: 'operations', label: 'Operations' },
+]
 
 export default function OnboardingPage() {
   const { session, refreshFacility } = useAuth()
-  const navigate = useNavigate()
-
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
+  const navigate   = useNavigate()
+  const [step,     setStep]    = useState(0)
+  const [loading,  setLoading] = useState(false)
+  const [error,    setError]   = useState(null)
   const [form, setForm] = useState({
-    name: '',
-    facility_type: 'pharmacy',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state_province: '',
-    country: 'NG',
-    postal_code: '',
-    phone: '',
-    email: '',
-    registration_number: '',
-    default_currency: 'NGN',
-    near_expiry_threshold_days: 90,
+    name: '', facility_type: 'pharmacy', registration_number: '',
+    address_line1: '', city: '', state_province: '', country: 'NG',
+    phone: '', email: '',
+    default_currency: 'NGN', near_expiry_threshold_days: 90,
   })
 
-  function update(field, value) {
-    setForm((currentForm) => ({
-      ...currentForm,
-      [field]: value,
-    }))
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  function next(e) {
+    e.preventDefault()
+    setError(null)
+    if (step < STEPS.length - 1) { setStep(s => s + 1) }
+    else handleSubmit()
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError(null)
-    setLoading(true)
-
-    try {
-      if (!session?.user?.id) {
-        throw new Error('Your session has expired. Please sign in again.')
-      }
-
-      const payload = {
-        name: form.name.trim(),
-        facility_type: form.facility_type,
-        address_line1: form.address_line1.trim(),
-        address_line2: form.address_line2.trim() || null,
-        city: form.city.trim(),
-        state_province: form.state_province.trim(),
-        country: form.country.trim().toUpperCase(),
-        postal_code: form.postal_code.trim() || null,
-        phone: form.phone.trim() || null,
-        email: form.email.trim() || null,
-        registration_number: form.registration_number.trim() || null,
-        default_currency: form.default_currency,
-        near_expiry_threshold_days: Number(form.near_expiry_threshold_days),
-        created_by: session.user.id,
-      }
-
-      const { data, error: facilityError } = await supabase
-        .from('facilities')
-        .insert(payload)
-        .select('id, name')
-        .single()
-
-      if (facilityError) {
-        throw facilityError
-      }
-
-      if (!data?.id) {
-        throw new Error('Facility was not created. No facility ID was returned.')
-      }
-
-      await refreshFacility()
-
-      navigate('/dashboard', { replace: true })
-    } catch (err) {
-      console.error('Facility setup failed:', err)
-      setError(err.message || 'Could not create facility. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+  async function handleSubmit() {
+    setLoading(true); setError(null)
+    const { error: err } = await supabase.from('facilities').insert({
+      ...form,
+      near_expiry_threshold_days: Number(form.near_expiry_threshold_days),
+      created_by: session.user.id,
+    })
+    if (err) { setError(err.message); setLoading(false); return }
+    await refreshFacility()
+    navigate('/dashboard')
   }
 
   return (
-    <main className="setup-page">
-      <section className="setup-shell fade-up">
-        <header className="setup-header">
-          <div className="brand-mark">MC</div>
+    <div className="onboarding-layout">
+      <div className="onboarding-card">
 
-          <div>
-            <p className="eyebrow">MediChain Africa</p>
-            <h1>Set up your facility</h1>
-            <p>
-              Create your facility profile. You can invite staff and configure
-              inventory rules after setup.
-            </p>
+        {/* Header */}
+        <div className="onboarding-header">
+          <div className="onboarding-brand">
+            <div className="onboarding-brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#07111f" strokeWidth="2.5" style={{width:14,height:14}}>
+                <path d="M12 2v20M2 12h20"/>
+              </svg>
+            </div>
+            <span className="onboarding-brand-text">MediChain Africa</span>
           </div>
-        </header>
+          <div className="onboarding-title">Set up your facility</div>
+          <div className="onboarding-subtitle">
+            Configure your facility profile to start tracking medicine availability, stock risk, and transfers.
+          </div>
 
-        <div className="setup-card">
+          {/* Step indicator */}
+          <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
+            {STEPS.map((s, i) => (
+              <div key={s.key} style={{ flex: 1 }}>
+                <div style={{
+                  height: 3, borderRadius: 99,
+                  background: i <= step ? 'var(--primary)' : 'var(--border)',
+                  transition: 'background 0.3s ease',
+                }} />
+                <div style={{
+                  fontSize: 10, marginTop: 4, fontWeight: 600,
+                  color: i === step ? 'var(--primary)' : i < step ? 'var(--success)' : 'var(--text-disabled)',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                }}>
+                  {i < step ? '✓ ' : ''}{s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="onboarding-body">
           <InlineError message={error} />
 
-          <form className="setup-form" onSubmit={handleSubmit}>
-            <div className="field">
-              <label htmlFor="name">Facility name *</label>
-              <input
-                id="name"
-                type="text"
-                required
-                placeholder="Eko Central Pharmacy"
-                value={form.name}
-                onChange={(event) => update('name', event.target.value)}
-              />
-            </div>
+          <form onSubmit={next} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            <div className="grid-2">
-              <div className="field">
-                <label htmlFor="facilityType">Facility type *</label>
-                <select
-                  id="facilityType"
-                  required
-                  value={form.facility_type}
-                  onChange={(event) => update('facility_type', event.target.value)}
-                >
-                  {FACILITY_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Step 0 — Identity */}
+            {step === 0 && (
+              <>
+                <div className="field">
+                  <label>Facility name *</label>
+                  <input required placeholder="e.g. Eko Central Pharmacy"
+                    value={form.name} onChange={e => set('name', e.target.value)} />
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Facility type *</label>
+                    <select required value={form.facility_type} onChange={e => set('facility_type', e.target.value)}>
+                      {FACILITY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Registration number</label>
+                    <input placeholder="PCN / NAFDAC / PPB"
+                      value={form.registration_number} onChange={e => set('registration_number', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Phone</label>
+                    <input type="tel" placeholder="+234…"
+                      value={form.phone} onChange={e => set('phone', e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label>Facility email</label>
+                    <input type="email"
+                      value={form.email} onChange={e => set('email', e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
 
-              <div className="field">
-                <label htmlFor="currency">Currency</label>
-                <select
-                  id="currency"
-                  value={form.default_currency}
-                  onChange={(event) => update('default_currency', event.target.value)}
-                >
-                  {CURRENCIES.map((currency) => (
-                    <option key={currency} value={currency}>
-                      {currency}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            {/* Step 1 — Location */}
+            {step === 1 && (
+              <>
+                <div className="field">
+                  <label>Street address *</label>
+                  <input required placeholder="14 Broad Street"
+                    value={form.address_line1} onChange={e => set('address_line1', e.target.value)} />
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>City *</label>
+                    <input required value={form.city} onChange={e => set('city', e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label>State / Province *</label>
+                    <input required value={form.state_province} onChange={e => set('state_province', e.target.value)} />
+                  </div>
+                </div>
+                <div className="field" style={{ maxWidth: 200 }}>
+                  <label>Country code *</label>
+                  <input required placeholder="NG" value={form.country} onChange={e => set('country', e.target.value)} />
+                  <div className="field-hint">2-letter ISO code, e.g. NG, GH, KE</div>
+                </div>
+              </>
+            )}
 
-            <div className="field">
-              <label htmlFor="address">Address *</label>
-              <input
-                id="address"
-                type="text"
-                required
-                placeholder="14 Broad Street"
-                value={form.address_line1}
-                onChange={(event) => update('address_line1', event.target.value)}
-              />
-            </div>
+            {/* Step 2 — Operations */}
+            {step === 2 && (
+              <>
+                <div className="inline-alert alert-info">
+                  <span className="inline-alert-icon">ℹ</span>
+                  <span>These settings control how stock alerts and pricing are displayed. You can change them in Settings at any time.</span>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Default currency</label>
+                    <select value={form.default_currency} onChange={e => set('default_currency', e.target.value)}>
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Near-expiry alert (days)</label>
+                    <input type="number" min={7} max={365}
+                      value={form.near_expiry_threshold_days}
+                      onChange={e => set('near_expiry_threshold_days', e.target.value)} />
+                    <div className="field-hint">Alert when medicines expire within this many days</div>
+                  </div>
+                </div>
+              </>
+            )}
 
-            <div className="grid-2">
-              <div className="field">
-                <label htmlFor="city">City *</label>
-                <input
-                  id="city"
-                  type="text"
-                  required
-                  value={form.city}
-                  onChange={(event) => update('city', event.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label htmlFor="state">State / Province *</label>
-                <input
-                  id="state"
-                  type="text"
-                  required
-                  value={form.state_province}
-                  onChange={(event) => update('state_province', event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="field">
-                <label htmlFor="country">Country code *</label>
-                <input
-                  id="country"
-                  type="text"
-                  required
-                  maxLength={2}
-                  value={form.country}
-                  onChange={(event) => update('country', event.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label htmlFor="registration">Registration number</label>
-                <input
-                  id="registration"
-                  type="text"
-                  placeholder="PCN / PPB / NAFDAC number"
-                  value={form.registration_number}
-                  onChange={(event) => update('registration_number', event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="field">
-                <label htmlFor="phone">Phone</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  placeholder="+234..."
-                  value={form.phone}
-                  onChange={(event) => update('phone', event.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label htmlFor="email">Facility email</label>
-                <input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => update('email', event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="field">
-              <label htmlFor="expiryThreshold">
-                Near-expiry alert threshold
-              </label>
-              <input
-                id="expiryThreshold"
-                type="number"
-                min={7}
-                max={365}
-                value={form.near_expiry_threshold_days}
-                onChange={(event) =>
-                  update('near_expiry_threshold_days', event.target.value)
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+              {step > 0
+                ? <button type="button" className="btn btn-ghost" onClick={() => setStep(s => s - 1)}>← Back</button>
+                : <div />
+              }
+              <button type="submit" className="btn btn-primary" disabled={loading} style={{ minWidth: 140 }}>
+                {loading
+                  ? <><div className="spinner spinner-sm" style={{borderTopColor:'#07111f'}}/> Creating…</>
+                  : step < STEPS.length - 1
+                    ? 'Continue →'
+                    : 'Create facility →'
                 }
-              />
+              </button>
             </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary btn-full"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="spinner" />
-                  Creating facility…
-                </>
-              ) : (
-                'Create facility'
-              )}
-            </button>
           </form>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   )
 }
