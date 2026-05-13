@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
             fontSize: 11, color: 'var(--text-muted)',
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
+            borderRadius: 'var(--r)',
             padding: '5px 10px',
           }}>
             {facility?.name ?? 'Facility'}
@@ -261,7 +261,7 @@ function KpiGrid({ kpis }) {
       {kpis.map(k => (
         <div key={k.label} style={{
           background: 'var(--bg-primary)', border: '1px solid var(--border-soft)',
-          borderRadius: 'var(--radius)', padding: '10px 12px',
+          borderRadius: 'var(--r)', padding: '10px 12px',
         }}>
           <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-disabled)', marginBottom: 3 }}>
             {k.label}
