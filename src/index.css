@@ -614,3 +614,79 @@ td {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* Onboarding / setup page */
+
+.setup-page {
+  min-height: 100vh;
+  padding: 40px 24px;
+  display: flex;
+  justify-content: center;
+  background:
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.1), transparent 32rem),
+    #07111f;
+}
+
+.setup-shell {
+  width: 100%;
+  max-width: 760px;
+}
+
+.setup-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.setup-header h1 {
+  margin: 6px 0 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.setup-header p:last-child {
+  max-width: 560px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.setup-card {
+  padding: 28px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #67e8f9;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+@media (max-width: 640px) {
+  .setup-page {
+    padding: 24px 16px;
+  }
+
+  .setup-header {
+    flex-direction: column;
+  }
+
+  .setup-card {
+    padding: 20px;
+  }
+}
