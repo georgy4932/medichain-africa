@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+@import './styles/auth.css';
+@import './styles/layout.css';
+@import './styles/dashboard.css';
+@import './styles/onboarding.css';
+@import './styles/forms.css';
+@import './styles/tables.css';
+@import './styles/utilities.css';
+
 :root {
   --bg-primary: #020617;
   --bg-secondary: #0f172a;
@@ -781,11 +789,3 @@ td {
   font-size: 34px;
   font-weight: 800;
 }
-
-@import './styles/auth.css';
-@import './styles/layout.css';
-@import './styles/dashboard.css';
-@import './styles/onboarding.css';
-@import './styles/forms.css';
-@import './styles/tables.css';
-@import './styles/utilities.css';
