@@ -1,0 +1,165 @@
+/* FORMS */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+
+  border: 1px solid var(--border);
+
+  background: rgba(255,255,255,.03);
+
+  color: var(--text-primary);
+
+  border-radius: 14px;
+
+  padding: 14px;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition: var(--transition);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(245,158,11,.5);
+
+  box-shadow:
+    0 0 0 3px rgba(245,158,11,.12);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* SEARCH */
+
+.search-input-wrap {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+
+  top: 50%;
+  left: 14px;
+
+  transform: translateY(-50%);
+
+  opacity: .5;
+}
+
+.search-input-wrap input {
+  padding-left: 42px;
+}
+
+/* BUTTONS */
+
+.btn {
+  border: none;
+
+  border-radius: 14px;
+
+  padding: 12px 18px;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: var(--transition);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--amber);
+  color: #111827;
+}
+
+.btn-primary:hover {
+  opacity: .96;
+}
+
+.btn-secondary {
+  background: var(--sky);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-ghost {
+  background: rgba(255,255,255,.04);
+
+  color: var(--text-secondary);
+
+  border: 1px solid var(--border);
+}
+
+.btn-sm {
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* MOBILE */
+
+@media (max-width: 640px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
