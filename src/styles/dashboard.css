@@ -164,3 +164,21 @@
     grid-template-columns: 1fr;
   }
 }
+
+.stats-grid {
+  align-items: stretch;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dashboard-panel {
+  min-height: 180px;
+}
+
+.panel-header a {
+  color: #67e8f9;
+}
