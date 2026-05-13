@@ -1,163 +1,106 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import InlineError from '../components/shared/InlineError'
+import { InlineError } from '../components/shared'
 
 export default function AuthPage() {
-  const [mode, setMode] = useState('signin')
-  const [email, setEmail] = useState('')
+  const [mode,     setMode]     = useState('signin')
+  const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState(null)
+  const [success,  setSuccess]  = useState(null)
+  const { signIn, signUp }      = useAuth()
 
-  const { signIn, signUp } = useAuth()
-
-  function switchMode(nextMode) {
-    setMode(nextMode)
-    setError(null)
-    setSuccess(null)
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-
-    setError(null)
-    setSuccess(null)
-    setLoading(true)
-
-    if (mode === 'signup' && !fullName.trim()) {
-      setError('Full name is required.')
-      setLoading(false)
-      return
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null); setSuccess(null); setLoading(true)
+    if (mode === 'signin') {
+      const err = await signIn(email, password)
+      if (err) setError(err.message)
+    } else {
+      if (!fullName.trim()) { setError('Full name is required.'); setLoading(false); return }
+      const err = await signUp(email, password, fullName)
+      if (err) setError(err.message)
+      else setSuccess('Account created. Check your email to confirm, then sign in.')
     }
-
-    const authError =
-      mode === 'signin'
-        ? await signIn(email, password)
-        : await signUp(email, password, fullName.trim())
-
-    if (authError) {
-      setError(authError.message)
-    } else if (mode === 'signup') {
-      setSuccess('Account created. Check your email to confirm, then sign in.')
-    }
-
     setLoading(false)
   }
 
+  function switchMode(m) { setMode(m); setError(null); setSuccess(null) }
+
   return (
-    <main className="auth-page">
-      <section className="auth-panel fade-up">
+    <div className="auth-layout">
+      <div className="auth-card">
+
+        {/* Brand */}
         <div className="auth-brand">
-          <div className="brand-mark">MC</div>
-          <div>
-            <h1>MediChain</h1>
-            <p>Africa Pharmacy Supply Intelligence</p>
+          <div className="auth-brand-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#07111f" strokeWidth="2.5" style={{width:22,height:22}}>
+              <path d="M12 2v20M2 12h20"/>
+            </svg>
           </div>
+          <span className="auth-brand-name">MediChain</span>
+          <span className="auth-brand-tag">Africa Pharmacy Supply Intelligence</span>
         </div>
 
-        <div className="auth-card">
-          <div className="auth-header">
-            <h2>{mode === 'signin' ? 'Welcome back' : 'Create account'}</h2>
-            <p>
-              {mode === 'signin'
-                ? 'Sign in to access your facility command centre.'
-                : 'Create your account to begin managing facility inventory.'}
-            </p>
+        {/* Card */}
+        <div className="auth-surface">
+          <div className="auth-title">
+            {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+          </div>
+          <div className="auth-subtitle">
+            {mode === 'signin'
+              ? 'Sign in to access your facility command centre.'
+              : 'Set up your facility and start tracking medicine availability.'}
           </div>
 
-          <InlineError message={error} />
-
+          {error   && <InlineError message={error} />}
           {success && (
-            <div className="alert-banner alert-banner-success" role="status">
-              <div className="alert-icon alert-icon-success">✓</div>
-              <div className="alert-message alert-message-success">
-                {success}
-              </div>
+            <div className="inline-alert alert-success" style={{ marginBottom: 4 }}>
+              <span className="inline-alert-icon">✓</span>
+              <span>{success}</span>
             </div>
           )}
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {mode === 'signup' && (
               <div className="field">
-                <label htmlFor="fullName">Full name</label>
-                <input
-                  id="fullName"
-                  type="text"
-                  placeholder="Dr. Amaka Obi"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  required
-                  autoComplete="name"
-                />
+                <label>Full name</label>
+                <input type="text" placeholder="Dr. Amaka Obi" value={fullName}
+                  onChange={e => setFullName(e.target.value)} required autoComplete="name" />
               </div>
             )}
 
             <div className="field">
-              <label htmlFor="email">Email address</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="you@facility.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-              />
+              <label>Email address</label>
+              <input type="email" placeholder="you@facility.com" value={email}
+                onChange={e => setEmail(e.target.value)} required autoComplete="email" />
             </div>
 
             <div className="field">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                minLength={8}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              />
+              <label>Password</label>
+              <input type="password" placeholder="••••••••" value={password}
+                onChange={e => setPassword(e.target.value)} required minLength={8}
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
             </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary btn-full"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="spinner" />
-                  Processing…
-                </>
-              ) : mode === 'signin' ? (
-                'Sign in'
-              ) : (
-                'Create account'
-              )}
+            <button type="submit" className="btn btn-primary btn-full btn-lg"
+              disabled={loading} style={{ marginTop: 2 }}>
+              {loading
+                ? <><div className="spinner spinner-sm" style={{borderTopColor:'#07111f'}}/> Signing in…</>
+                : mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>
           </form>
 
           <div className="auth-switch">
-            {mode === 'signin' ? (
-              <>
-                No account?
-                <button type="button" onClick={() => switchMode('signup')}>
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?
-                <button type="button" onClick={() => switchMode('signin')}>
-                  Sign in
-                </button>
-              </>
-            )}
+            {mode === 'signin'
+              ? <>No account?{' '}<button onClick={() => switchMode('signup')}>Sign up</button></>
+              : <>Have an account?{' '}<button onClick={() => switchMode('signin')}>Sign in</button></>
+            }
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   )
 }
