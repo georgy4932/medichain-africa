@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-@import './styles/auth.css';
 @import './styles/layout.css';
 @import './styles/dashboard.css';
 @import './styles/onboarding.css';
