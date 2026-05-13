@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useFacility } from '../../hooks/useFacility'
@@ -8,8 +8,13 @@ export default function AppShell() {
   const { profile, signOut }              = useAuth()
   const { facility, facilityId }          = useFacility()
   const navigate                          = useNavigate()
+  const location                          = useLocation()
   const [alertCount,    setAlertCount]    = useState(0)
   const [transferCount, setTransferCount] = useState(0)
+  const [mobileOpen,    setMobileOpen]    = useState(false)
+
+  // Close mobile nav on route change
+  useEffect(() => { setMobileOpen(false) }, [location.pathname])
 
   useEffect(() => {
     if (!facilityId) return
@@ -31,62 +36,99 @@ export default function AppShell() {
 
   const roleLabel = (profile?.role ?? '').replace(/_/g, ' ')
 
-  return (
-    <div className="app-shell">
-      {/* ── SIDEBAR ── */}
-      <aside className="sidebar">
+  const sidebarContent = (
+    <>
+      {/* Brand */}
+      <div className="sidebar-brand">
+        <div className="sidebar-product-eyebrow">MediChain Africa</div>
+        <div className="sidebar-product-name">Operations Hub</div>
+        <div className="sidebar-product-desc">Medicine supply intelligence</div>
+      </div>
 
-        {/* Brand */}
-        <div className="sidebar-brand">
-          <div className="sidebar-product-eyebrow">MediChain Africa</div>
-          <div className="sidebar-product-name">Operations Hub</div>
-          <div className="sidebar-product-desc">Medicine supply intelligence</div>
-        </div>
-
-        {/* Facility */}
-        {facility && (
-          <div style={{ padding: '8px 10px 0' }}>
-            <div className="sidebar-facility">
-              <div className="sidebar-facility-label">Current Facility</div>
-              <div className="sidebar-facility-name">{facility.name}</div>
-              <div className="sidebar-facility-meta">
-                <span className={`fac-dot ${facility.is_verified ? 'fac-dot-verified' : 'fac-dot-unverified'}`} />
-                {facility.city}, {facility.country} · {facility.is_verified ? 'Verified' : 'Unverified'}
-              </div>
+      {/* Facility */}
+      {facility && (
+        <div style={{ padding: '8px 10px 0' }}>
+          <div className="sidebar-facility">
+            <div className="sidebar-facility-label">Current Facility</div>
+            <div className="sidebar-facility-name">{facility.name}</div>
+            <div className="sidebar-facility-meta">
+              <span className={`fac-dot ${facility.is_verified ? 'fac-dot-verified' : 'fac-dot-unverified'}`} />
+              {facility.city}, {facility.country} · {facility.is_verified ? 'Verified' : 'Unverified'}
             </div>
           </div>
-        )}
-
-        {/* Nav */}
-        <nav className="sidebar-nav">
-          <div className="nav-group">
-            <span className="nav-group-label">Operations</span>
-            <NavItem to="/dashboard" label="Dashboard"       icon={<DashIcon />} />
-            <NavItem to="/inventory" label="Inventory"       icon={<BoxIcon />} />
-            <NavItem to="/alerts"    label="Alerts"          icon={<BellIcon />}   badge={alertCount}    badgeWarning />
-            <NavItem to="/search"    label="Medicine Search" icon={<SearchIcon />} />
-            <NavItem to="/transfers" label="Transfers"       icon={<ArrowsIcon />} badge={transferCount} />
-          </div>
-          <div className="nav-group">
-            <span className="nav-group-label">Management</span>
-            <NavItem to="/analytics" label="Analytics" icon={<ChartIcon />} />
-            <NavItem to="/staff"     label="Staff"     icon={<UsersIcon />} />
-            <NavItem to="/settings"  label="Settings"  icon={<GearIcon />} />
-          </div>
-        </nav>
-
-        {/* User */}
-        <div className="sidebar-footer">
-          <div className="sidebar-user-card">
-            <div className="sidebar-user-name truncate">{profile?.full_name ?? 'User'}</div>
-            <div className="sidebar-user-role">{roleLabel || 'Pharmacist'}</div>
-          </div>
-          <button className="sidebar-signout" onClick={handleSignOut}>
-            <SignOutIcon />
-            Sign out
-          </button>
         </div>
+      )}
+
+      {/* Nav */}
+      <nav className="sidebar-nav">
+        <div className="nav-group">
+          <span className="nav-group-label">Operations</span>
+          <NavItem to="/dashboard" label="Dashboard"       icon={<DashIcon />} />
+          <NavItem to="/inventory" label="Inventory"       icon={<BoxIcon />} />
+          <NavItem to="/alerts"    label="Alerts"          icon={<BellIcon />}   badge={alertCount}    badgeWarning />
+          <NavItem to="/search"    label="Medicine Search" icon={<SearchIcon />} />
+          <NavItem to="/transfers" label="Transfers"       icon={<ArrowsIcon />} badge={transferCount} />
+        </div>
+        <div className="nav-group">
+          <span className="nav-group-label">Management</span>
+          <NavItem to="/analytics" label="Analytics" icon={<ChartIcon />} />
+          <NavItem to="/staff"     label="Staff"     icon={<UsersIcon />} />
+          <NavItem to="/settings"  label="Settings"  icon={<GearIcon />} />
+        </div>
+      </nav>
+
+      {/* User */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user-card">
+          <div className="sidebar-user-name truncate">{profile?.full_name ?? 'User'}</div>
+          <div className="sidebar-user-role">{roleLabel || 'Pharmacist'}</div>
+        </div>
+        <button className="sidebar-signout" onClick={handleSignOut}>
+          <SignOutIcon />
+          Sign out
+        </button>
+      </div>
+    </>
+  )
+
+  return (
+    <div className="app-shell">
+      {/* ── DESKTOP SIDEBAR ── */}
+      <aside className="sidebar">
+        {sidebarContent}
       </aside>
+
+      {/* ── MOBILE TOPBAR ── */}
+      <div className="mobile-topbar">
+        <button className="mobile-menu-btn" onClick={() => setMobileOpen(true)}>
+          <HamburgerIcon />
+        </button>
+        <div className="mobile-topbar-brand">
+          <div className="sidebar-product-eyebrow" style={{ marginBottom: 0 }}>MediChain</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            {facility?.name ?? 'Operations Hub'}
+          </div>
+        </div>
+        <div style={{ width: 32 }} />
+      </div>
+
+      {/* ── MOBILE DRAWER ── */}
+      {mobileOpen && (
+        <>
+          <div className="mobile-overlay" onClick={() => setMobileOpen(false)} />
+          <aside className="sidebar mobile-drawer">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 10px 0' }}>
+              <button
+                onClick={() => setMobileOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer', padding: 4 }}
+              >
+                ×
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </>
+      )}
 
       {/* ── MAIN ── */}
       <main className="main-content">
@@ -113,17 +155,18 @@ function NavItem({ to, label, icon, badge, badgeWarning }) {
 }
 
 /* Icons */
-const i = (d, extra) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{width:14,height:14,...extra}}>
+const ic = (d, s = {}) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 14, height: 14, ...s }}>
     {d}
   </svg>
 )
-const DashIcon   = () => i(<><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>)
-const BoxIcon    = () => i(<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>)
-const BellIcon   = () => i(<><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>)
-const SearchIcon = () => i(<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></>)
-const ArrowsIcon = () => i(<><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></>)
-const ChartIcon  = () => i(<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>)
-const UsersIcon  = () => i(<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>)
-const GearIcon   = () => i(<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>)
-const SignOutIcon = () => i(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>, {width:13,height:13})
+const DashIcon    = () => ic(<><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>)
+const BoxIcon     = () => ic(<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>)
+const BellIcon    = () => ic(<><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>)
+const SearchIcon  = () => ic(<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></>)
+const ArrowsIcon  = () => ic(<><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></>)
+const ChartIcon   = () => ic(<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>)
+const UsersIcon   = () => ic(<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>)
+const GearIcon    = () => ic(<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>)
+const SignOutIcon  = () => ic(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>, { width: 13, height: 13 })
+const HamburgerIcon = () => ic(<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>, { width: 18, height: 18 })
