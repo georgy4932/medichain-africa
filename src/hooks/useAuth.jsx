@@ -4,92 +4,68 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(undefined)
-  const [profile, setProfile] = useState(null)
-  const [facility, setFacility] = useState(null)
+  const [session,         setSession]         = useState(undefined) // undefined = initializing
+  const [profile,         setProfile]         = useState(null)
+  const [facility,        setFacility]        = useState(null)
+  const [facilityLoading, setFacilityLoading] = useState(false)
 
   useEffect(() => {
-    async function initAuth() {
-      const { data, error } = await supabase.auth.getSession()
-
-      if (error) {
-        console.error('Error loading session:', error.message)
+    // Get initial session
+    supabase.auth.getSession().then(({ data }) => {
+      const sess = data.session ?? null
+      setSession(sess)
+      if (sess) {
+        setFacilityLoading(true)
+        loadProfile(sess.user.id).finally(() => setFacilityLoading(false))
+      } else {
         setSession(null)
-        return
       }
+    })
 
-      setSession(data.session ?? null)
-
-      if (data.session?.user?.id) {
-        await loadProfile(data.session.user.id)
-      }
-    }
-
-    initAuth()
-
-    const { data } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      setSession(currentSession)
-
-      if (currentSession?.user?.id) {
-        await loadProfile(currentSession.user.id)
+    // Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_ev, sess) => {
+      setSession(sess)
+      if (sess) {
+        setFacilityLoading(true)
+        loadProfile(sess.user.id).finally(() => setFacilityLoading(false))
       } else {
         setProfile(null)
         setFacility(null)
+        setFacilityLoading(false)
       }
     })
 
-    return () => {
-      data.subscription.unsubscribe()
-    }
+    return () => listener.subscription.unsubscribe()
   }, [])
 
   async function loadProfile(userId) {
-    const { data: userProfile, error: profileError } = await supabase
+    const { data: prof } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
-      .maybeSingle()
+      .single()
 
-    if (profileError) {
-      console.error('Error loading profile:', profileError.message)
-      setProfile(null)
-      setFacility(null)
-      return
+    setProfile(prof)
+
+    if (prof) {
+      const { data: staff } = await supabase
+        .from('facility_staff')
+        .select('facility_id, role, facilities(*)')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .limit(1)
+        .single()
+
+      if (staff?.facilities) {
+        setFacility({ ...staff.facilities, staffRole: staff.role })
+      } else {
+        setFacility(null)
+      }
     }
-
-    setProfile(userProfile)
-
-    const { data: staffRecord, error: staffError } = await supabase
-      .from('facility_staff')
-      .select('facility_id, role, facilities(*)')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle()
-
-    if (staffError) {
-      console.error('Error loading facility:', staffError.message)
-      setFacility(null)
-      return
-    }
-
-    if (!staffRecord?.facilities) {
-      setFacility(null)
-      return
-    }
-
-    setFacility({
-      ...staffRecord.facilities,
-      staffRole: staffRecord.role,
-    })
   }
 
   async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     return error
   }
 
@@ -97,50 +73,38 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
+      options: { data: { full_name: fullName } },
     })
-
     return error
   }
 
   async function signOut() {
-    const { error } = await supabase.auth.signOut()
-    return error
+    await supabase.auth.signOut()
   }
 
   async function refreshFacility() {
-    if (!session?.user?.id) return
-    await loadProfile(session.user.id)
+    const { data: { session: sess } } = await supabase.auth.getSession()
+    if (sess) {
+      setFacilityLoading(true)
+      await loadProfile(sess.user.id)
+      setFacilityLoading(false)
+    }
   }
 
-  const value = {
-    session,
-    profile,
-    facility,
-    signIn,
-    signUp,
-    signOut,
-    refreshFacility,
-    loading: session === undefined,
-  }
+  // loading = true while session is initializing OR while facility is being fetched
+  const loading = session === undefined || facilityLoading
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      session, profile, facility,
+      signIn, signUp, signOut, refreshFacility,
+      loading,
+    }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider')
-  }
-
-  return context
-} 
+  return useContext(AuthContext)
+}
