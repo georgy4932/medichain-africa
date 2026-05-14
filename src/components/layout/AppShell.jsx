@@ -34,7 +34,9 @@ export default function AppShell() {
     navigate('/auth')
   }
 
-  const roleLabel = (profile?.role ?? '').replace(/_/g, ' ')
+  // Show facility role (e.g. Facility Admin) not system role
+  const staffRole  = facility?.staffRole ?? profile?.role ?? ''
+  const roleLabel  = staffRole.replace(/_/g, ' ')
 
   const sidebarContent = (
     <>
