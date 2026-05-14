@@ -131,7 +131,7 @@ export default function DashboardPage() {
         <StatCard
           label="Inventory Health"
           value={loading ? '—' : hasInventory ? `${stats.total}` : 'No data'}
-          sub={loading ? '' : hasInventory ? `${fmtNumber(stats.units)} unreserved units` : 'Add stock to activate health scoring'}
+          sub={loading ? '' : hasInventory ? `${fmtNumber(stats.units)} units available to dispense` : 'Add stock to activate health scoring'}
           accent="ac-teal"
         />
         <StatCard
@@ -141,9 +141,9 @@ export default function DashboardPage() {
           accent="ac-warning"
         />
         <StatCard
-          label="Coverage"
+          label="Tracked Medicines"
           value={loading ? '—' : `${stats?.total ?? 0}`}
-          sub="Medicine batches currently tracked"
+          sub="Active batches across all medicines"
           accent="ac-info"
         />
         <StatCard
@@ -199,12 +199,15 @@ export default function DashboardPage() {
               <span style={{ color: setupDone[step.key] ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
                 {step.label}
               </span>
-              <span style={{
-                fontSize: 11, fontWeight: 700,
-                color: setupDone[step.key] ? 'var(--success)' : 'var(--text-disabled)',
-              }}>
-                {setupDone[step.key] ? 'Done' : 'Pending'}
-              </span>
+              {setupDone[step.key] ? (
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)' }}>Done</span>
+              ) : step.key === 'transfer' ? (
+                <Link to="/search" style={{ fontSize: 11, fontWeight: 600, color: 'var(--primary)' }}>
+                  Search network →
+                </Link>
+              ) : (
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)' }}>Pending</span>
+              )}
             </div>
           ))}
         </div>
