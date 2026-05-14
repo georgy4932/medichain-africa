@@ -9,13 +9,6 @@ import {
 } from '../utils/formatters'
 import { Badge } from '../components/shared'
 
-const SETUP_STEPS = [
-  { key: 'facility',   label: 'Facility profile created' },
-  { key: 'inventory',  label: 'First inventory batch added' },
-  { key: 'alerts',     label: 'Stock alert thresholds active' },
-  { key: 'transfer',   label: 'Transfer network connected' },
-]
-
 export default function DashboardPage() {
   const { facility, facilityId, expiryThreshold } = useFacility()
   const [stats,     setStats]     = useState(null)
@@ -35,16 +28,21 @@ export default function DashboardPage() {
   async function loadStats() {
     const { data } = await supabase
       .from('inventory_items')
-      .select('quantity_available, quantity_reserved, reorder_level, expiry_date')
+      .select('quantity_available, quantity_reserved, reorder_level, expiry_date, medicines(essential_medicine)')
       .eq('facility_id', facilityId).eq('is_active', true)
     if (!data) return
     const u = i => i.quantity_available - i.quantity_reserved
+    const nearExpiry = data.filter(i => {
+      const d = daysUntilExpiry(i.expiry_date)
+      return d !== null && d >= 0 && d <= expiryThreshold
+    })
     setStats({
-      total:      data.length,
-      units:      data.reduce((s, i) => s + u(i), 0),
-      lowStock:   data.filter(i => u(i) > 0 && u(i) < i.reorder_level).length,
-      outOfStock: data.filter(i => i.quantity_available === 0).length,
-      nearExpiry: data.filter(i => { const d = daysUntilExpiry(i.expiry_date); return d !== null && d >= 0 && d <= expiryThreshold }).length,
+      total:       data.length,
+      units:       data.reduce((s, i) => s + u(i), 0),
+      lowStock:    data.filter(i => u(i) > 0 && u(i) < i.reorder_level).length,
+      outOfStock:  data.filter(i => i.quantity_available === 0).length,
+      nearExpiry:  nearExpiry.length,
+      redistributable: nearExpiry.filter(i => u(i) > 0).length,
     })
   }
 
@@ -53,7 +51,7 @@ export default function DashboardPage() {
       .from('stock_alerts')
       .select('*, medicines(generic_name)')
       .eq('facility_id', facilityId).eq('status', 'active')
-      .order('created_at', { ascending: false }).limit(6)
+      .order('created_at', { ascending: false }).limit(5)
     setAlerts(data ?? [])
   }
 
@@ -72,101 +70,97 @@ export default function DashboardPage() {
       .from('inventory_movements')
       .select('id,movement_type,quantity_change,performed_at,inventory_items(medicines(generic_name))')
       .eq('facility_id', facilityId)
-      .order('performed_at', { ascending: false }).limit(8)
+      .order('performed_at', { ascending: false }).limit(6)
     setMovements(data ?? [])
   }
 
   const hasInventory = stats && stats.total > 0
-  const setupDone = {
-    facility: true,
-    inventory: hasInventory,
-    alerts: hasInventory,
-    transfer: transfers.length > 0,
-  }
+  const atRisk       = (stats?.lowStock ?? 0) + (stats?.outOfStock ?? 0)
 
   return (
     <div>
-      {/* ── Page top ── */}
+      {/* Page header */}
       <div className="page-top">
         <div>
-          <div className="page-eyebrow">Rx Operations Dashboard</div>
+          <div className="page-eyebrow">Supply Network · Command Center</div>
           <div className="page-title">
-            {facility?.name ?? 'Dashboard'}
-            {facility && !facility.is_verified && (
-              <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--warning)', marginLeft: 12 }}>
-                · Unverified
+            {facility?.name ?? 'Overview'}
+            {facility?.is_verified && (
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--success)', marginLeft: 12 }}>
+                ✓ Verified facility
               </span>
             )}
           </div>
           <div className="page-subtitle">
-            {facility?.city}, {facility?.country}
-            {facility?.near_expiry_threshold_days && ` · ${facility.near_expiry_threshold_days}-day expiry window`}
+            {facility?.city}, {facility?.country} · {facility?.facility_type?.replace(/_/g, ' ')} · {expiryThreshold}-day expiry window
           </div>
         </div>
         <div className="page-actions">
-          <Link to="/inventory" className="btn btn-primary">+ Add stock</Link>
-          <Link to="/search"    className="btn btn-ghost">Search network</Link>
+          <Link to="/search"    className="btn btn-primary">Search network</Link>
+          <Link to="/inventory" className="btn btn-ghost">+ Add stock</Link>
         </div>
       </div>
 
-      {/* ── Setup prompt (zero state) ── */}
+      {/* Zero state — network framing */}
       {!hasInventory && !loading && (
         <div className="card card-pad" style={{ marginBottom: 20, borderColor: 'var(--primary-border)', background: 'var(--primary-dim)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>
-                Start by adding your first stock batch
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+                Make your facility visible in the medicine availability network
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                MediChain tracks stock risk, expiry exposure, and facility transfer readiness.
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Add inventory to power local medicine availability intelligence. Other verified facilities and clinics in your area will be able to locate medicines at your facility and request transfers when they face shortages.
               </div>
             </div>
-            <Link to="/inventory" className="btn btn-primary btn-sm">Add first batch →</Link>
+            <Link to="/inventory" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}>Add first batch →</Link>
           </div>
         </div>
       )}
 
-      {/* ── Stat cards — RxDesk style ── */}
+      {/* KPI cards — network framing */}
       <div className="grid-4" style={{ marginBottom: 20 }}>
         <StatCard
-          label="Inventory Health"
-          value={loading ? '—' : hasInventory ? `${stats.total}` : 'No data'}
-          sub={loading ? '' : hasInventory ? `${fmtNumber(stats.units)} units available to dispense` : 'Add stock to activate health scoring'}
+          label="Facility Availability"
+          value={loading ? '—' : hasInventory ? fmtNumber(stats.total) : '0'}
+          sub={loading ? '' : hasInventory ? `${fmtNumber(stats.units)} units available to network` : 'No stock published to network'}
           accent="ac-teal"
         />
         <StatCard
-          label="Stock Risk"
-          value={loading ? '—' : `${(stats?.lowStock ?? 0) + (stats?.outOfStock ?? 0)}`}
-          sub={loading ? '' : `Low stock · out of stock, near-expiry items`}
-          accent="ac-warning"
+          label="Stockout Risk"
+          value={loading ? '—' : fmtNumber(atRisk)}
+          sub={`${stats?.lowStock ?? 0} low stock · ${stats?.outOfStock ?? 0} out of stock`}
+          accent={atRisk > 0 ? 'ac-warning' : ''}
         />
         <StatCard
-          label="Tracked Medicines"
-          value={loading ? '—' : `${stats?.total ?? 0}`}
-          sub="Active batches across all medicines"
-          accent="ac-info"
+          label="Expiry Redistribution"
+          value={loading ? '—' : fmtNumber(stats?.redistributable ?? 0)}
+          sub={`Batches expiring within ${expiryThreshold} days with available stock`}
+          accent={stats?.redistributable > 0 ? 'ac-orange' : ''}
         />
         <StatCard
-          label="Transfer Flow"
-          value={loading ? '—' : `${transfers.length}`}
-          sub="Pending, approved, or in-transit requests"
-          accent="ac-purple"
+          label="Active Transfers"
+          value={loading ? '—' : fmtNumber(transfers.length)}
+          sub="Pending · approved · in transit"
+          accent={transfers.length > 0 ? 'ac-purple' : ''}
         />
       </div>
 
-      {/* ── Two-column row ── */}
+      {/* Two column */}
       <div className="grid-2" style={{ marginBottom: 16 }}>
 
-        {/* Critical Alerts */}
+        {/* Shortage alerts */}
         <div className="section-shell">
           <div className="section-shell-header">
-            <span className="section-shell-title">Critical alerts</span>
+            <span className="section-shell-title">Shortage Alerts</span>
             <Link to="/alerts" className="btn btn-xs btn-ghost">View all</Link>
           </div>
           {alerts.length === 0 ? (
             <div style={{ padding: '24px 18px', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--success)', marginBottom: 3 }}>✓ No active stock risk detected</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Alerts appear when stock falls below reorder level or approaches expiry.</div>
+              <div style={{ fontSize: 12, color: 'var(--success)', marginBottom: 3 }}>✓ No active shortage signals</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Alerts fire automatically when stock falls below reorder level or approaches expiry.
+              </div>
             </div>
           ) : alerts.map(a => (
             <div key={a.id} className="activity-item">
@@ -184,43 +178,21 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Setup Progress */}
+        {/* Redistribution pipeline */}
         <div className="section-shell">
           <div className="section-shell-header">
-            <span className="section-shell-title">Setup progress</span>
-            <Link to="/settings" className="btn btn-xs btn-ghost">View all</Link>
-          </div>
-          {SETUP_STEPS.map(step => (
-            <div key={step.key} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 18px', borderBottom: '1px solid var(--border-soft)',
-              fontSize: 12.5,
-            }}>
-              <span style={{ color: setupDone[step.key] ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
-                {step.label}
-              </span>
-              {setupDone[step.key] ? (
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)' }}>Done</span>
-              ) : step.key === 'transfer' ? (
-                <Link to="/search" style={{ fontSize: 11, fontWeight: 600, color: 'var(--primary)' }}>
-                  Search network →
-                </Link>
-              ) : (
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)' }}>Pending</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Active Transfers ── */}
-      {transfers.length > 0 && (
-        <div className="section-shell" style={{ marginBottom: 16 }}>
-          <div className="section-shell-header">
-            <span className="section-shell-title">Active transfers</span>
+            <span className="section-shell-title">Redistribution Pipeline</span>
             <Link to="/transfers" className="btn btn-xs btn-ghost">View all</Link>
           </div>
-          {transfers.map(t => (
+          {transfers.length === 0 ? (
+            <div style={{ padding: '24px 18px', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>No active redistribution requests</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 12 }}>
+                Search the network to locate trusted medicine supply nearby, or offer surplus stock to prevent shortages at other facilities.
+              </div>
+              <Link to="/search" className="btn btn-primary btn-sm">Search network →</Link>
+            </div>
+          ) : transfers.map(t => (
             <div key={t.id} className="activity-item">
               <div className="activity-dot" />
               <div className="activity-text" style={{ flex: 1 }}>
@@ -230,7 +202,7 @@ export default function DashboardPage() {
                 {' '}
                 <Badge className={transferStatusClass(t.status)}>{transferStatusLabel(t.status)}</Badge>
                 <div style={{ marginTop: 2, fontSize: 11, color: 'var(--text-muted)' }}>
-                  Qty {t.quantity_requested}
+                  {t.requesting?.name} → {t.supplying?.name}
                   {t.urgency !== 'normal' && <span style={{ color: 'var(--warning)', marginLeft: 6 }}>· {t.urgency}</span>}
                 </div>
               </div>
@@ -238,20 +210,43 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
-      )}
+      </div>
 
-      {/* ── Recent Stock Movement ── */}
-      <div className="section-shell">
-        <div className="section-shell-header">
-          <span className="section-shell-title">Recent stock movement</span>
-          <Link to="/inventory" className="btn btn-xs btn-ghost">Inventory</Link>
-        </div>
-        {movements.length === 0 ? (
-          <div style={{ padding: '24px 18px', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
-            No stock movements recorded.{' '}
-            <Link to="/inventory" style={{ color: 'var(--primary)' }}>Add your first batch.</Link>
+      {/* Network actions — contextual */}
+      <div className="grid-3" style={{ marginBottom: 16 }}>
+        <ActionCard
+          to="/search"
+          icon="🔍"
+          title="Search medicine network"
+          desc="Find trusted medicine supply from verified facilities nearby. Locate availability before shortages affect patients."
+          cta="Search now"
+          accent="var(--primary)"
+        />
+        <ActionCard
+          to="/transfers"
+          icon="↔"
+          title="Request or offer stock"
+          desc="Prevent stockouts by requesting from network facilities. Redistribute near-expiry stock before it is wasted."
+          cta="Manage redistribution"
+          accent="var(--purple)"
+        />
+        <ActionCard
+          to="/alerts"
+          icon="⚡"
+          title="Monitor shortage signals"
+          desc="Track emerging stock risks at your facility. Act before stockouts affect patient care."
+          cta={`${alerts.length > 0 ? `${alerts.length} active alerts` : 'View alerts'}`}
+          accent={alerts.length > 0 ? 'var(--warning)' : 'var(--text-muted)'}
+        />
+      </div>
+
+      {/* Recent stock movement */}
+      {movements.length > 0 && (
+        <div className="section-shell">
+          <div className="section-shell-header">
+            <span className="section-shell-title">Recent Stock Movement</span>
+            <Link to="/inventory" className="btn btn-xs btn-ghost">Inventory</Link>
           </div>
-        ) : (
           <table>
             <thead>
               <tr>
@@ -277,8 +272,8 @@ export default function DashboardPage() {
               })}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -290,5 +285,24 @@ function StatCard({ label, value, sub, accent }) {
       <div className="stat-label">{label}</div>
       {sub && <div className="stat-sublabel">{sub}</div>}
     </div>
+  )
+}
+
+function ActionCard({ to, icon, title, desc, cta, accent }) {
+  return (
+    <Link to={to} style={{ textDecoration: 'none' }}>
+      <div className="card card-pad" style={{
+        cursor: 'pointer', transition: 'border-color var(--t)',
+        height: '100%', display: 'flex', flexDirection: 'column', gap: 8,
+      }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      >
+        <div style={{ fontSize: 20 }}>{icon}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{title}</div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.6, flex: 1 }}>{desc}</div>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: accent, marginTop: 4 }}>{cta} →</div>
+      </div>
+    </Link>
   )
 }
