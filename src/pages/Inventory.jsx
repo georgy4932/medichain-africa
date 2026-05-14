@@ -142,7 +142,7 @@ export default function InventoryPage() {
               <th>Medicine</th>
               <th>Batch</th>
               <th>Status</th>
-              <th>Unreserved</th>
+              <th title="Excludes stock reserved for pending transfers">Available</th>
               <th>Reorder at</th>
               <th>Expiry</th>
               <th>Price</th>
@@ -187,12 +187,13 @@ export default function InventoryPage() {
                     </Badge>
                   </td>
                   <td>
-                    <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                    <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 12 }}
+                      title="Excludes stock reserved for pending transfers">
                       {fmtNumber(unreserved)}
                     </span>
                     {item.quantity_reserved > 0 && (
                       <div style={{ fontSize: 10, color: 'var(--warning)', marginTop: 1 }}>
-                        {item.quantity_reserved} reserved
+                        {item.quantity_reserved} reserved for transfer
                       </div>
                     )}
                   </td>
@@ -210,7 +211,10 @@ export default function InventoryPage() {
                     </Badge>
                   </td>
                   <td className="td-muted">
-                    {fmtCurrency(item.selling_price, facility?.default_currency)}
+                    {item.selling_price
+                      ? fmtCurrency(item.selling_price, facility?.default_currency)
+                      : <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>Not set</span>
+                    }
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 5 }}>
@@ -406,7 +410,7 @@ function AdjModal({ item, onClose, onSuccess }) {
     >
       <ContextCard
         title={item.medicines?.generic_name}
-        meta={`Batch ${item.batch_number} · ${fmtNumber(unreserved)} unreserved units`}
+        meta={`Batch ${item.batch_number} · ${fmtNumber(unreserved)} units available`}
       />
       <InlineError message={error} />
       <form id="adj-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
