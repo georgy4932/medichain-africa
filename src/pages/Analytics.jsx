@@ -1,93 +1,85 @@
 import { useFacility } from '../hooks/useFacility'
+import { Link } from 'react-router-dom'
 
-/* ────────────────────────────────────────────────────────────────
-   Analytics — Inactive operational intelligence modules.
-   Modules show their structure + placeholder data.
-   Never "coming soon." Always operational-looking.
-──────────────────────────────────────────────────────────────── */
-
-const MODULES = [
+const INTELLIGENCE_MODULES = [
   {
-    id: 'stock-movement',
-    title: 'Stock Movement Trend',
-    desc: 'Daily receipts vs. dispensed units over the last 30 days',
+    id: 'essential-coverage',
+    title: 'Essential Medicine Coverage',
+    desc: 'WHO Essential Medicines List coverage score for this facility and surrounding network',
     accent: 'var(--primary)',
-    bars: [
-      { label: 'Week 1', in: 68, out: 45 },
-      { label: 'Week 2', in: 82, out: 60 },
-      { label: 'Week 3', in: 55, out: 70 },
-      { label: 'Week 4', in: 91, out: 58 },
+    type: 'ranked',
+    rows: [
+      { label: 'Anti-infectives',  pct: 70 },
+      { label: 'Antimalarials',    pct: 60 },
+      { label: 'Analgesics',       pct: 85 },
+      { label: 'Cardiovascular',   pct: 40 },
+      { label: 'Antidiabetics',    pct: 55 },
     ],
-    type: 'dual-bar',
   },
   {
-    id: 'expiry-forecast',
-    title: 'Expiry Risk Forecast',
-    desc: 'Projected batch expirations over the next 6 months',
-    accent: 'var(--warning)',
-    bars: [
-      { label: 'Jan', value: 20 },
-      { label: 'Feb', value: 45 },
-      { label: 'Mar', value: 30 },
-      { label: 'Apr', value: 75 },
-      { label: 'May', value: 15 },
-      { label: 'Jun', value: 50 },
-    ],
+    id: 'shortage-signals',
+    title: 'Emerging Shortage Signals',
+    desc: 'Medicines approaching stockout across network facilities in your area',
+    accent: 'var(--danger)',
     type: 'bar',
+    bars: [
+      { label: 'Week 1', value: 0 },
+      { label: 'Week 2', value: 0 },
+      { label: 'Week 3', value: 0 },
+      { label: 'Week 4', value: 0 },
+    ],
+  },
+  {
+    id: 'expiry-redistribution',
+    title: 'Expiry Redistribution Forecast',
+    desc: 'Near-expiry stock available for redistribution to prevent wastage',
+    accent: 'var(--warning)',
+    type: 'bar',
+    bars: [
+      { label: '0–30d',  value: 0 },
+      { label: '31–60d', value: 0 },
+      { label: '61–90d', value: 0 },
+    ],
+  },
+  {
+    id: 'transfer-fulfillment',
+    title: 'Transfer Fulfillment Rate',
+    desc: 'Percentage of redistribution requests successfully completed',
+    accent: 'var(--success)',
+    type: 'kpi-grid',
+    kpis: [
+      { label: 'Requests sent',     value: '—' },
+      { label: 'Approved',          value: '—' },
+      { label: 'Fulfilled',         value: '—' },
+      { label: 'Fulfillment rate',  value: '—' },
+    ],
   },
   {
     id: 'fast-movers',
     title: 'Fast-Moving Medicines',
-    desc: 'Highest consumption rate by unit volume this month',
+    desc: 'Highest consumption rate — early signals of upcoming supply pressure',
     accent: 'var(--info)',
-    rows: [
-      { label: 'Amoxicillin 500mg', pct: 88 },
-      { label: 'Artemether/Lumefantrine', pct: 74 },
-      { label: 'Metformin 500mg', pct: 63 },
-      { label: 'Paracetamol 500mg', pct: 55 },
-      { label: 'ORS Sachets', pct: 42 },
-    ],
     type: 'ranked',
-  },
-  {
-    id: 'transfer-rate',
-    title: 'Transfer Fulfillment Rate',
-    desc: 'Percentage of transfer requests successfully fulfilled',
-    accent: 'var(--success)',
-    kpis: [
-      { label: 'Requested',  value: '—' },
-      { label: 'Approved',   value: '—' },
-      { label: 'Fulfilled',  value: '—' },
-      { label: 'Rejected',   value: '—' },
+    rows: [
+      { label: 'Amoxicillin 500mg',          pct: 88 },
+      { label: 'Artemether/Lumefantrine',    pct: 74 },
+      { label: 'Metformin 500mg',            pct: 63 },
+      { label: 'Paracetamol 500mg',          pct: 55 },
+      { label: 'ORS Sachets',                pct: 42 },
     ],
-    type: 'kpi-grid',
   },
   {
-    id: 'essential-coverage',
-    title: 'Essential Medicine Coverage',
-    desc: 'WHO Essential Medicines List coverage at this facility',
+    id: 'network-availability',
+    title: 'Network Availability Trend',
+    desc: 'Medicine availability across connected facilities over time',
     accent: 'var(--purple)',
-    rows: [
-      { label: 'Anti-infectives', pct: 70 },
-      { label: 'Analgesics',      pct: 85 },
-      { label: 'Antimalarials',   pct: 60 },
-      { label: 'Cardiovascular',  pct: 40 },
-      { label: 'Antidiabetics',   pct: 55 },
-    ],
-    type: 'ranked',
-  },
-  {
-    id: 'stockout-duration',
-    title: 'Stockout Duration Analysis',
-    desc: 'Average days out-of-stock per medicine category',
-    accent: 'var(--danger)',
+    type: 'dual-bar',
     bars: [
-      { label: 'Antimalarials',  value: 0 },
-      { label: 'Antibiotics',    value: 0 },
-      { label: 'Analgesics',     value: 0 },
-      { label: 'Antidiabetics',  value: 0 },
+      { label: 'Week 1', in: 0, out: 0 },
+      { label: 'Week 2', in: 0, out: 0 },
+      { label: 'Week 3', in: 0, out: 0 },
+      { label: 'Week 4', in: 0, out: 0 },
     ],
-    type: 'bar',
   },
 ]
 
@@ -98,60 +90,57 @@ export default function AnalyticsPage() {
     <div>
       <div className="page-top">
         <div>
-          <div className="page-eyebrow">ANALYTICS</div>
-          <div className="page-title">Analytics</div>
+          <div className="page-eyebrow">My Facility · Supply Intelligence</div>
+          <div className="page-title">Supply Intelligence</div>
           <div className="page-subtitle">
-            Operational intelligence activates as inventory data accumulates
+            Operational analytics activate as inventory and transfer data accumulates
           </div>
         </div>
         <div className="page-actions">
-          <span style={{
-            fontSize: 11, color: 'var(--text-muted)',
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r)',
-            padding: '5px 10px',
-          }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '5px 10px' }}>
             {facility?.name ?? 'Facility'}
           </span>
         </div>
       </div>
 
       {/* Activation notice */}
-      <div className="inline-alert alert-info" style={{ marginBottom: 18 }}>
-        <span className="inline-alert-icon">ℹ</span>
-        <div>
-          <div style={{ fontWeight: 600, marginBottom: 2 }}>Analytics activate with inventory data</div>
-          <div style={{ fontSize: 11 }}>
-            These modules will populate automatically as you add inventory batches, process transfers, and record stock movements. The structure is already built — add stock to begin.
+      <div className="card card-pad" style={{ marginBottom: 20, display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+            Intelligence modules activate with network data
           </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            These modules populate automatically as your facility adds inventory, processes transfers, and participates in the medicine network. Add stock and connect with other facilities to begin generating supply intelligence.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <Link to="/inventory" className="btn btn-primary btn-sm">Add inventory</Link>
+          <Link to="/search"    className="btn btn-ghost btn-sm">Search network</Link>
         </div>
       </div>
 
-      {/* Summary header row */}
-      <div className="grid-4" style={{ marginBottom: 18 }}>
-        <LockedKpi label="Total Batches Tracked" />
-        <LockedKpi label="Avg. Days to Stockout" />
-        <LockedKpi label="Transfer Success Rate" />
-        <LockedKpi label="Expiry Loss Rate" />
+      {/* Summary KPIs */}
+      <div className="grid-4" style={{ marginBottom: 20 }}>
+        {[
+          { label: 'Availability Score',       sub: 'Essential medicine coverage index' },
+          { label: 'Network Shortage Risk',    sub: 'Emerging signals in your area' },
+          { label: 'Redistribution Potential', sub: 'Near-expiry units available' },
+          { label: 'Transfer Fulfillment',     sub: 'Request completion rate' },
+        ].map(k => (
+          <div key={k.label} className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--text-disabled)', fontSize: 20 }}>—</div>
+            <div className="stat-label">{k.label}</div>
+            <div className="stat-sublabel">{k.sub}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Module grid */}
+      {/* Intelligence modules */}
       <div className="analytics-grid">
-        {MODULES.map(m => (
+        {INTELLIGENCE_MODULES.map(m => (
           <ModuleCard key={m.id} module={m} />
         ))}
       </div>
-    </div>
-  )
-}
-
-function LockedKpi({ label }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value" style={{ color: 'var(--text-disabled)', fontSize: 20 }}>—</div>
-      <div className="stat-desc">Awaiting data</div>
     </div>
   )
 }
@@ -161,16 +150,19 @@ function ModuleCard({ module: m }) {
     <div className="module-card">
       <div className="module-header">
         <div>
-          <div className="module-title">{m.title}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{m.desc}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.accent, flexShrink: 0 }} />
+            <div className="module-title">{m.title}</div>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', paddingLeft: 12 }}>{m.desc}</div>
         </div>
-        <span className="module-status locked">Inactive</span>
+        <span className="module-status">Inactive</span>
       </div>
       <div className="module-body">
-        {m.type === 'bar' && <BarChart bars={m.bars} accent={m.accent} />}
-        {m.type === 'dual-bar' && <DualBarChart bars={m.bars} accent={m.accent} />}
-        {m.type === 'ranked' && <RankedList rows={m.rows} accent={m.accent} />}
-        {m.type === 'kpi-grid' && <KpiGrid kpis={m.kpis} />}
+        {m.type === 'bar'      && <BarChart    bars={m.bars}  accent={m.accent} />}
+        {m.type === 'dual-bar' && <DualBar     bars={m.bars}  accent={m.accent} />}
+        {m.type === 'ranked'   && <RankedList  rows={m.rows}  accent={m.accent} />}
+        {m.type === 'kpi-grid' && <KpiGrid     kpis={m.kpis} />}
       </div>
     </div>
   )
@@ -182,49 +174,34 @@ function BarChart({ bars, accent }) {
     <div className="chart-placeholder">
       {bars.map(b => (
         <div key={b.label} className="chart-bar-row">
-          <span style={{ width: 48, flex: 'none', textAlign: 'right' }}>{b.label}</span>
+          <span style={{ width: 44, flex: 'none', textAlign: 'right', fontSize: 10 }}>{b.label}</span>
           <div className="chart-bar-track">
-            <div
-              className="chart-bar-fill"
-              style={{
-                width: `${((b.value || 0) / max) * 100}%`,
-                background: b.value > 0 ? accent : 'var(--bg-elevated)',
-                opacity: 0.45,
-              }}
-            />
+            <div className="chart-bar-fill" style={{ width: `${((b.value || 0) / max) * 100}%`, background: b.value > 0 ? accent : 'var(--bg-elevated)', opacity: 0.4 }} />
           </div>
-          <span style={{ width: 24, flex: 'none', fontFamily: 'var(--font-mono)' }}>
-            {b.value > 0 ? b.value : '—'}
-          </span>
+          <span style={{ width: 20, flex: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>{b.value > 0 ? b.value : '—'}</span>
         </div>
       ))}
     </div>
   )
 }
 
-function DualBarChart({ bars, accent }) {
+function DualBar({ bars, accent }) {
   return (
     <div className="chart-placeholder">
       <div style={{ display: 'flex', gap: 12, marginBottom: 6, fontSize: 10, color: 'var(--text-muted)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 8, height: 3, background: accent, opacity: 0.5, display: 'inline-block', borderRadius: 99 }} />
-          Received
+          <span style={{ width: 8, height: 3, background: accent, opacity: 0.5, display: 'inline-block', borderRadius: 99 }} />Received
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 8, height: 3, background: 'var(--warning)', opacity: 0.5, display: 'inline-block', borderRadius: 99 }} />
-          Dispensed
+          <span style={{ width: 8, height: 3, background: 'var(--warning)', opacity: 0.5, display: 'inline-block', borderRadius: 99 }} />Distributed
         </span>
       </div>
       {bars.map(b => (
         <div key={b.label} style={{ marginBottom: 5 }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{b.label}</div>
           <div style={{ display: 'flex', gap: 3 }}>
-            <div className="chart-bar-track" style={{ flex: 1 }}>
-              <div className="chart-bar-fill" style={{ width: `${b.in}%`, background: accent, opacity: 0.4 }} />
-            </div>
-            <div className="chart-bar-track" style={{ flex: 1 }}>
-              <div className="chart-bar-fill" style={{ width: `${b.out}%`, background: 'var(--warning)', opacity: 0.4 }} />
-            </div>
+            <div className="chart-bar-track" style={{ flex: 1 }}><div className="chart-bar-fill" style={{ width: `${b.in}%`, background: accent, opacity: 0.4 }} /></div>
+            <div className="chart-bar-track" style={{ flex: 1 }}><div className="chart-bar-fill" style={{ width: `${b.out}%`, background: 'var(--warning)', opacity: 0.4 }} /></div>
           </div>
         </div>
       ))}
@@ -237,18 +214,12 @@ function RankedList({ rows, accent }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
       {rows.map((r, i) => (
         <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 10, color: 'var(--text-disabled)', width: 14, flex: 'none', fontFamily: 'var(--font-mono)' }}>
-            {i + 1}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1, minWidth: 0 }} className="truncate">
-            {r.label}
-          </span>
+          <span style={{ fontSize: 10, color: 'var(--text-disabled)', width: 14, flex: 'none', fontFamily: 'var(--font-mono)' }}>{i + 1}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1, minWidth: 0 }} className="truncate">{r.label}</span>
           <div className="chart-bar-track" style={{ width: 80, flex: 'none' }}>
             <div className="chart-bar-fill" style={{ width: `${r.pct}%`, background: accent, opacity: 0.4 }} />
           </div>
-          <span style={{ fontSize: 10, color: 'var(--text-disabled)', width: 28, flex: 'none', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-            —
-          </span>
+          <span style={{ fontSize: 10, color: 'var(--text-disabled)', width: 24, flex: 'none', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>—</span>
         </div>
       ))}
     </div>
@@ -259,16 +230,9 @@ function KpiGrid({ kpis }) {
   return (
     <div className="grid-2" style={{ gap: 8 }}>
       {kpis.map(k => (
-        <div key={k.label} style={{
-          background: 'var(--bg-primary)', border: '1px solid var(--border-soft)',
-          borderRadius: 'var(--r)', padding: '10px 12px',
-        }}>
-          <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-disabled)', marginBottom: 3 }}>
-            {k.label}
-          </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-disabled)', letterSpacing: '-0.04em' }}>
-            {k.value}
-          </div>
+        <div key={k.label} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-soft)', borderRadius: 'var(--r)', padding: '10px 12px' }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-disabled)', marginBottom: 3 }}>{k.label}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-disabled)', letterSpacing: '-0.04em' }}>{k.value}</div>
         </div>
       ))}
     </div>
