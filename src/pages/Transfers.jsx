@@ -9,17 +9,16 @@ import {
 import { Modal, InlineError, EmptyState, Badge, SpinnerCenter, TransferPipeline, ContextCard } from '../components/shared'
 
 const TABS = [
-  { key: 'all',      label: 'All' },
-  { key: 'incoming', label: 'Incoming' },
-  { key: 'outgoing', label: 'Outgoing' },
-  { key: 'active',   label: 'Active' },
+  { key: 'all',      label: 'All requests' },
+  { key: 'incoming', label: 'Incoming'     },
+  { key: 'outgoing', label: 'Outgoing'     },
+  { key: 'active',   label: 'Active'       },
 ]
 
 export default function TransfersPage() {
   const { facilityId } = useFacility()
   const location       = useLocation()
   const prefill        = location.state?.prefill ?? null
-
   const [transfers, setTransfers] = useState([])
   const [loading,   setLoading]   = useState(true)
   const [tab,       setTab]       = useState('all')
@@ -38,11 +37,9 @@ export default function TransfersPage() {
         supplying:supplying_facility_id(id,name,city)`)
       .or(`requesting_facility_id.eq.${facilityId},supplying_facility_id.eq.${facilityId}`)
       .order('created_at', { ascending: false })
-
     if (tab === 'incoming') q = q.eq('supplying_facility_id', facilityId)
     if (tab === 'outgoing') q = q.eq('requesting_facility_id', facilityId)
     if (tab === 'active')   q = q.in('status', ['pending','approved','in_transit'])
-
     const { data } = await q
     setTransfers(data ?? [])
     setLoading(false)
@@ -52,13 +49,33 @@ export default function TransfersPage() {
     <div>
       <div className="page-top">
         <div>
-          <div className="page-eyebrow">TRANSFER REQUESTS</div>
-          <div className="page-title">Stock Transfers</div>
-          <div className="page-subtitle">Request, manage, and track medicine transfers between facilities</div>
+          <div className="page-eyebrow">Supply Network · Redistribution</div>
+          <div className="page-title">Stock Redistribution</div>
+          <div className="page-subtitle">
+            Prevent stockouts by coordinating medicine transfers across the facility network
+          </div>
         </div>
         <div className="page-actions">
-          <button className="btn btn-primary" onClick={() => setNewOpen(true)}>+ New request</button>
+          <button className="btn btn-primary" onClick={() => setNewOpen(true)}>+ Request stock</button>
         </div>
+      </div>
+
+      {/* Framing banner */}
+      <div className="card card-pad" style={{ marginBottom: 16, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+        {[
+          { icon: '🔍', label: 'Find supply', desc: 'Search the network for available medicines from trusted facilities nearby.' },
+          { icon: '↔', label: 'Request transfer', desc: 'Submit a stock request. The supplying facility reviews and approves.' },
+          { icon: '⚡', label: 'Prevent stockout', desc: 'Receive approved stock before patients are affected by shortages.' },
+          { icon: '♻', label: 'Redistribute surplus', desc: 'Offer near-expiry stock to other facilities rather than wasting it.' },
+        ].map(step => (
+          <div key={step.label} style={{ flex: '1 1 160px', minWidth: 0, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>{step.icon}</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>{step.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>{step.desc}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
@@ -72,9 +89,9 @@ export default function TransfersPage() {
 
       {loading ? <SpinnerCenter /> : transfers.length === 0 ? (
         <EmptyState
-          title="No transfer requests"
-          description="Transfer requests allow you to move medicine stock between facilities in the network."
-          actions={<button className="btn btn-primary btn-sm" onClick={() => setNewOpen(true)}>Create request</button>}
+          title="No redistribution requests"
+          description="Search the medicine network to find trusted supply nearby, or create a request when your facility faces a shortage risk."
+          actions={<button className="btn btn-primary btn-sm" onClick={() => setNewOpen(true)}>Request stock</button>}
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -116,78 +133,57 @@ function TransferCard({ transfer: t, facilityId, onAction }) {
 
   return (
     <div className="card card-pad">
-      {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <Badge className={transferStatusClass(t.status)} dot>{transferStatusLabel(t.status)}</Badge>
           {t.urgency !== 'normal' && <Badge className={urgencyClass(t.urgency)}>{t.urgency}</Badge>}
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtRelative(t.created_at)}</span>
+          {isRequesting && <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--r-xs)', padding: '1px 6px' }}>Outgoing</span>}
+          {isSupplying  && <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--r-xs)', padding: '1px 6px' }}>Incoming</span>}
+          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{fmtRelative(t.created_at)}</span>
         </div>
         <TransferPipeline status={t.status} />
       </div>
 
-      {/* Medicine + facilities */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
           {t.medicines?.generic_name} · {t.medicines?.strength}
         </div>
         <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
           <span>
-            <span style={{ color: 'var(--text-disabled)' }}>From</span>{' '}
+            <span style={{ color: 'var(--text-disabled)' }}>From </span>
             <strong style={{ color: 'var(--text-secondary)' }}>{t.supplying?.name}</strong>
-            {t.supplying?.city && ` · ${t.supplying.city}`}
           </span>
           <span style={{ color: 'var(--text-disabled)' }}>→</span>
           <span>
-            <span style={{ color: 'var(--text-disabled)' }}>To</span>{' '}
+            <span style={{ color: 'var(--text-disabled)' }}>To </span>
             <strong style={{ color: 'var(--text-secondary)' }}>{t.requesting?.name}</strong>
-            {t.requesting?.city && ` · ${t.requesting.city}`}
           </span>
         </div>
       </div>
 
-      {/* Quantities */}
-      <div style={{ display: 'flex', gap: 20, fontSize: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-        <div>
-          <span style={{ color: 'var(--text-muted)' }}>Requested </span>
-          <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{fmtNumber(t.quantity_requested)}</span>
-        </div>
-        {t.quantity_approved && (
-          <div>
-            <span style={{ color: 'var(--text-muted)' }}>Approved </span>
-            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{fmtNumber(t.quantity_approved)}</span>
-          </div>
-        )}
-        {t.quantity_fulfilled && (
-          <div>
-            <span style={{ color: 'var(--text-muted)' }}>Fulfilled </span>
-            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{fmtNumber(t.quantity_fulfilled)}</span>
-          </div>
-        )}
+      <div style={{ display: 'flex', gap: 20, fontSize: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+        <span><span style={{ color: 'var(--text-muted)' }}>Requested </span><strong style={{ fontFamily: 'var(--font-mono)' }}>{fmtNumber(t.quantity_requested)}</strong></span>
+        {t.quantity_approved  && <span><span style={{ color: 'var(--text-muted)' }}>Approved </span><strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{fmtNumber(t.quantity_approved)}</strong></span>}
+        {t.quantity_fulfilled && <span><span style={{ color: 'var(--text-muted)' }}>Fulfilled </span><strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{fmtNumber(t.quantity_fulfilled)}</strong></span>}
       </div>
 
-      {t.reason && (
-        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 12, fontStyle: 'italic' }}>
-          "{t.reason}"
-        </div>
-      )}
+      {t.reason && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 10, fontStyle: 'italic' }}>"{t.reason}"</div>}
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {isSupplying && t.status === 'pending' && (
           <>
-            <button className="btn btn-primary btn-sm" onClick={() => onAction('approve')}>Approve</button>
-            <button className="btn btn-danger btn-sm" onClick={() => onAction('reject')}>Reject</button>
+            <button className="btn btn-primary btn-sm" onClick={() => onAction('approve')}>Approve transfer</button>
+            <button className="btn btn-danger btn-sm"  onClick={() => onAction('reject')}>Decline</button>
           </>
         )}
         {isSupplying && t.status === 'approved' && (
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => onAction('in_transit')}>Mark in transit</button>
-            <button className="btn btn-primary btn-sm" onClick={() => onAction('fulfill')}>Fulfill</button>
+            <button className="btn btn-ghost btn-sm"   onClick={() => onAction('in_transit')}>Mark dispatched</button>
+            <button className="btn btn-primary btn-sm" onClick={() => onAction('fulfill')}>Confirm fulfillment</button>
           </>
         )}
         {isSupplying && t.status === 'in_transit' && (
-          <button className="btn btn-primary btn-sm" onClick={() => onAction('fulfill')}>Confirm fulfillment</button>
+          <button className="btn btn-primary btn-sm" onClick={() => onAction('fulfill')}>Confirm delivery</button>
         )}
         {isRequesting && ['pending','approved','in_transit'].includes(t.status) && (
           <button className="btn btn-ghost btn-sm" onClick={() => onAction('cancel')}>Cancel request</button>
@@ -197,7 +193,6 @@ function TransferCard({ transfer: t, facilityId, onAction }) {
   )
 }
 
-/* ── NEW TRANSFER MODAL ── */
 function NewTransferModal({ facilityId, prefill, onClose, onSuccess }) {
   const [facilities, setFacilities] = useState([])
   const [medicines,  setMedicines]  = useState([])
@@ -237,11 +232,11 @@ function NewTransferModal({ facilityId, prefill, onClose, onSuccess }) {
   }
 
   return (
-    <Modal title="New transfer request" subtitle="Stock will not be reserved until the supplying facility approves" onClose={onClose}
+    <Modal title="Request stock transfer" subtitle="The supplying facility will be notified and must approve before stock is reserved" onClose={onClose}
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" form="new-tr-form" type="submit" disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Submitting…</> : 'Submit request'}
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }}/> Submitting…</> : 'Submit request'}
         </button>
       </>}
     >
@@ -256,9 +251,10 @@ function NewTransferModal({ facilityId, prefill, onClose, onSuccess }) {
         <div className="field">
           <label>Supplying facility *</label>
           <select required value={f.supplying_facility_id} onChange={e => set('supplying_facility_id', e.target.value)}>
-            <option value="">Select facility…</option>
-            {facilities.map(x => <option key={x.id} value={x.id}>{x.name} — {x.city}</option>)}
+            <option value="">Select facility from network…</option>
+            {facilities.map(x => <option key={x.id} value={x.id}>{x.name} — {x.city}, {x.country}</option>)}
           </select>
+          <div className="field-hint">Select a facility you found in the medicine network search</div>
         </div>
         <div className="field">
           <label>Medicine *</label>
@@ -276,21 +272,22 @@ function NewTransferModal({ facilityId, prefill, onClose, onSuccess }) {
             <label>Urgency</label>
             <select value={f.urgency} onChange={e => set('urgency', e.target.value)}>
               <option value="normal">Normal</option>
-              <option value="urgent">Urgent</option>
-              <option value="critical">Critical</option>
+              <option value="urgent">Urgent — stockout imminent</option>
+              <option value="critical">Critical — patients affected</option>
             </select>
           </div>
         </div>
         <div className="field">
           <label>Reason for request</label>
-          <textarea value={f.reason} onChange={e => set('reason', e.target.value)} placeholder="Why is this stock needed? (Stockout, patient demand, etc.)" />
+          <textarea value={f.reason} onChange={e => set('reason', e.target.value)}
+            placeholder="e.g. Stockout — no supply from distributor for 2 weeks. 40 patients on this medication." />
+          <div className="field-hint">A clear reason increases approval rate from supplying facilities</div>
         </div>
       </form>
     </Modal>
   )
 }
 
-/* ── ACTION MODALS ── */
 function ActionModal({ action: { type, transfer }, facilityId, onClose, onSuccess }) {
   const [inventoryItems, setInventoryItems] = useState([])
   const [f,       setF]       = useState({ inventory_item_id: '', quantity: '', notes: '' })
@@ -302,7 +299,7 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
       supabase.from('inventory_items')
         .select('id,batch_number,quantity_available,quantity_reserved,expiry_date')
         .eq('facility_id', facilityId)
-        .eq('medicine_id', transfer.medicines?.id ?? transfer.medicine_id)
+        .eq('medicine_id', transfer.medicine_id)
         .eq('is_active', true)
         .then(({ data }) => setInventoryItems(data ?? []))
     }
@@ -310,46 +307,41 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
 
   const TITLES = {
     approve:    'Approve transfer request',
-    reject:     'Reject transfer request',
+    reject:     'Decline transfer request',
     cancel:     'Cancel transfer request',
-    in_transit: 'Mark transfer as in transit',
-    fulfill:    'Confirm transfer fulfillment',
+    in_transit: 'Mark stock as dispatched',
+    fulfill:    'Confirm stock delivery',
   }
 
   async function handleSubmit(e) {
     e.preventDefault(); setError(null); setLoading(true)
-
     let err
     if (type === 'approve') {
-      const res = await supabase.rpc('approve_transfer_request', {
-        p_request_id:        transfer.id,
-        p_quantity_approved: Number(f.quantity),
-        p_inventory_item_id: f.inventory_item_id,
-      }); err = res.error
+      const res = await supabase.rpc('approve_transfer_request', { p_request_id: transfer.id, p_quantity_approved: Number(f.quantity), p_inventory_item_id: f.inventory_item_id })
+      err = res.error
     } else if (type === 'reject') {
-      const res = await supabase.rpc('reject_transfer_request', { p_request_id: transfer.id, p_notes: f.notes || null }); err = res.error
+      const res = await supabase.rpc('reject_transfer_request', { p_request_id: transfer.id, p_notes: f.notes || null })
+      err = res.error
     } else if (type === 'cancel') {
-      const res = await supabase.rpc('cancel_transfer_request', { p_request_id: transfer.id, p_notes: f.notes || null }); err = res.error
+      const res = await supabase.rpc('cancel_transfer_request', { p_request_id: transfer.id, p_notes: f.notes || null })
+      err = res.error
     } else if (type === 'in_transit') {
-      const res = await supabase.rpc('mark_transfer_in_transit', { p_request_id: transfer.id, p_notes: f.notes || null }); err = res.error
+      const res = await supabase.rpc('mark_transfer_in_transit', { p_request_id: transfer.id, p_notes: f.notes || null })
+      err = res.error
     } else if (type === 'fulfill') {
-      const res = await supabase.rpc('fulfill_transfer_request', {
-        p_request_id:         transfer.id,
-        p_quantity_fulfilled: Number(f.quantity),
-        p_notes:              f.notes || null,
-      }); err = res.error
+      const res = await supabase.rpc('fulfill_transfer_request', { p_request_id: transfer.id, p_quantity_fulfilled: Number(f.quantity), p_notes: f.notes || null })
+      err = res.error
     }
-
     if (err) { setError(err.message); setLoading(false); return }
     onSuccess()
   }
 
   const BTN = {
-    approve: { label: 'Approve', cls: 'btn-primary' },
-    reject:  { label: 'Reject',  cls: 'btn-danger' },
-    cancel:  { label: 'Cancel request', cls: 'btn-danger' },
-    in_transit: { label: 'Mark in transit', cls: 'btn-secondary' },
-    fulfill: { label: 'Confirm fulfillment', cls: 'btn-primary' },
+    approve:    { label: 'Approve transfer', cls: 'btn-primary' },
+    reject:     { label: 'Decline request',  cls: 'btn-danger' },
+    cancel:     { label: 'Cancel request',   cls: 'btn-danger' },
+    in_transit: { label: 'Mark dispatched',  cls: 'btn-secondary' },
+    fulfill:    { label: 'Confirm delivery', cls: 'btn-primary' },
   }
 
   return (
@@ -357,7 +349,7 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Back</button>
         <button className={`btn ${BTN[type].cls}`} form="action-form" type="submit" disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: type === 'approve' || type === 'fulfill' ? '#07111f' : undefined }} /> Processing…</> : BTN[type].label}
+          {loading ? <><div className="spinner spinner-sm"/> Processing…</> : BTN[type].label}
         </button>
       </>}
     >
@@ -370,12 +362,12 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
         {type === 'approve' && (
           <>
             <div className="field">
-              <label>Select inventory batch to reserve *</label>
+              <label>Select batch to reserve *</label>
               <select required value={f.inventory_item_id} onChange={e => setF(p => ({ ...p, inventory_item_id: e.target.value }))}>
                 <option value="">Choose batch…</option>
                 {inventoryItems.map(i => (
                   <option key={i.id} value={i.id}>
-                    Batch {i.batch_number} · {fmtNumber(i.quantity_available - i.quantity_reserved)} unreserved · exp {fmtDate(i.expiry_date)}
+                    Batch {i.batch_number} · {fmtNumber(i.quantity_available - i.quantity_reserved)} available · exp {fmtDate(i.expiry_date)}
                   </option>
                 ))}
               </select>
@@ -384,23 +376,22 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
               <label>Quantity to approve *</label>
               <input type="number" required min={1} max={transfer.quantity_requested}
                 value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: e.target.value }))} />
-              <div className="field-hint">Max: {transfer.quantity_requested} (requested)</div>
+              <div className="field-hint">Max: {transfer.quantity_requested} units requested</div>
             </div>
           </>
         )}
         {type === 'fulfill' && (
           <div className="field">
-            <label>Quantity fulfilled *</label>
+            <label>Quantity delivered *</label>
             <input type="number" required min={1} max={transfer.quantity_approved}
               value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: e.target.value }))} />
-            <div className="field-hint">Max: {transfer.quantity_approved} (approved)</div>
           </div>
         )}
         {['reject','cancel','in_transit'].includes(type) && (
           <div className="field">
-            <label>Notes {type === 'reject' ? '(reason for rejection)' : '(optional)'}</label>
+            <label>Notes {type === 'reject' ? '(reason) *' : '(optional)'}</label>
             <textarea value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))}
-              placeholder={type === 'reject' ? 'Explain why this request cannot be fulfilled' : 'Any additional notes'} />
+              placeholder={type === 'reject' ? 'Explain why this request cannot be fulfilled' : 'Any notes for the requesting facility'} />
           </div>
         )}
       </form>
