@@ -81,9 +81,9 @@ export default function SettingsPage() {
     <div>
       <div className="page-top">
         <div>
-          <div className="page-eyebrow">SYSTEM CONFIGURATION</div>
+          <div className="page-eyebrow">My Facility · Configuration</div>
           <div className="page-title">Settings</div>
-          <div className="page-subtitle">Facility profile and operational configuration</div>
+          <div className="page-subtitle">Configure your facility network node — identity, visibility, and operational thresholds</div>
         </div>
       </div>
 
@@ -92,8 +92,8 @@ export default function SettingsPage() {
         <div className="card card-pad" style={{ position: 'sticky', top: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {[
-              { key: 'profile',    label: 'Facility Profile' },
-              { key: 'operations', label: 'Operations' },
+              { key: 'profile',    label: 'Network Identity' },
+              { key: 'operations', label: 'Network Settings' },
               { key: 'account',    label: 'My Account' },
               { key: 'danger',     label: 'Danger Zone' },
             ].map(t => (
@@ -122,8 +122,8 @@ export default function SettingsPage() {
             <div className="card">
               <div className="card-header">
                 <div>
-                  <div className="card-title">Facility Profile</div>
-                  <div className="card-subtitle">Name, location, and contact information</div>
+                  <div className="card-title">Network Identity</div>
+                  <div className="card-subtitle">How your facility appears in the MediChain medicine availability network</div>
                 </div>
                 {facility?.is_verified
                   ? <Badge className="badge-success" dot>Verified</Badge>
@@ -181,7 +181,7 @@ export default function SettingsPage() {
                   {isAdmin && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="submit" className="btn btn-primary" disabled={saving}>
-                        {saving ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Saving…</> : 'Save facility profile'}
+                        {saving ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Saving…</> : 'Save network identity'}
                       </button>
                     </div>
                   )}
@@ -194,8 +194,8 @@ export default function SettingsPage() {
             <div className="card">
               <div className="card-header">
                 <div>
-                  <div className="card-title">Operational Settings</div>
-                  <div className="card-subtitle">Currency, alert thresholds, and operational defaults</div>
+                  <div className="card-title">Network Settings</div>
+                  <div className="card-subtitle">Stock alert thresholds and currency settings that control how your facility participates in the network</div>
                 </div>
               </div>
               <div className="card-pad">
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                       <select value={facForm.default_currency} onChange={e => setF('default_currency', e.target.value)} disabled={!isAdmin}>
                         {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <div className="field-hint">Used for all pricing displayed in this facility</div>
+                      <div className="field-hint">Used for pricing displayed in inventory and transfer records</div>
                     </div>
                   </div>
                   <div className="form-section">
@@ -231,7 +231,7 @@ export default function SettingsPage() {
                   {isAdmin && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="submit" className="btn btn-primary" disabled={saving}>
-                        {saving ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Saving…</> : 'Save settings'}
+                        {saving ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Saving…</> : 'Save network settings'}
                       </button>
                     </div>
                   )}
@@ -310,7 +310,7 @@ export default function SettingsPage() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 3 }}>Deactivate facility</div>
                     <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: 400 }}>
-                      Deactivating this facility will hide it from medicine searches and prevent new transfers. Existing data is preserved. Only system administrators can reactivate.
+                      Deactivating this facility removes it from the medicine availability network. Your facility will no longer appear in network searches and no new transfers can be initiated. All existing data is preserved and the facility can be reactivated by system administrators.
                     </div>
                   </div>
                   <button
