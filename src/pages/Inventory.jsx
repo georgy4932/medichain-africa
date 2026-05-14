@@ -8,21 +8,20 @@ import {
 } from '../utils/formatters'
 import { Modal, InlineError, EmptyState, Badge, SkeletonRow, ContextCard } from '../components/shared'
 
-const DOSAGE_FORMS    = ['tablet','capsule','syrup','suspension','injection','infusion','cream','ointment','drops','inhaler','suppository','patch','powder','other']
-const STORAGE_CONDS   = ['room_temperature','cool','refrigerated','frozen','controlled_room','protect_from_light','protect_from_moisture']
-const MOVEMENT_TYPES  = [
-  { value: 'receipt',          label: 'Receipt — stock received' },
-  { value: 'dispensed',        label: 'Dispensed — given to patient/facility' },
-  { value: 'adjustment',       label: 'Manual adjustment' },
-  { value: 'expired_removal',  label: 'Expired removal' },
-  { value: 'return',           label: 'Return to supplier' },
+const STORAGE_CONDS = ['room_temperature','cool','refrigerated','frozen','controlled_room','protect_from_light','protect_from_moisture']
+const MOVEMENT_TYPES = [
+  { value: 'receipt',         label: 'Receipt — stock received from supplier' },
+  { value: 'dispensed',       label: 'Dispensed — issued to patient or facility' },
+  { value: 'adjustment',      label: 'Manual adjustment' },
+  { value: 'expired_removal', label: 'Expired removal' },
+  { value: 'return',          label: 'Return to supplier' },
 ]
 const FILTER_OPTIONS = [
-  { key: 'all',        label: 'All' },
-  { key: 'low',        label: 'Low stock',    chip: 'chip-warning' },
-  { key: 'out',        label: 'Out of stock', chip: 'chip-danger'  },
-  { key: 'expiring',   label: 'Near expiry',  chip: 'chip-warning' },
-  { key: 'reserved',   label: 'Has reservations' },
+  { key: 'all',      label: 'All stock' },
+  { key: 'low',      label: 'Low stock',    chip: 'chip-warning' },
+  { key: 'out',      label: 'Out of stock', chip: 'chip-danger'  },
+  { key: 'expiring', label: 'Near expiry',  chip: 'chip-warning' },
+  { key: 'reserved', label: 'Reserved'                           },
 ]
 
 export default function InventoryPage() {
@@ -42,9 +41,8 @@ export default function InventoryPage() {
     setLoading(true)
     const { data } = await supabase
       .from('inventory_items')
-      .select('*, medicines(generic_name, dosage_form, strength, therapeutic_class), suppliers(name)')
-      .eq('facility_id', facilityId)
-      .eq('is_active', true)
+      .select('*, medicines(generic_name, dosage_form, strength, therapeutic_class, essential_medicine), suppliers(name)')
+      .eq('facility_id', facilityId).eq('is_active', true)
       .order('created_at', { ascending: false })
     setItems(data ?? [])
     setLoading(false)
@@ -61,13 +59,12 @@ export default function InventoryPage() {
   }, [facilityId])
 
   const filtered = items.filter(i => {
-    const unreserved = i.quantity_available - i.quantity_reserved
-    const days       = daysUntilExpiry(i.expiry_date)
+    const u = i.quantity_available - i.quantity_reserved
+    const days = daysUntilExpiry(i.expiry_date)
     const q = search.toLowerCase()
-    const matchSearch = !q || [i.medicines?.generic_name, i.brand_name, i.batch_number]
-      .some(v => v?.toLowerCase().includes(q))
+    const matchSearch = !q || [i.medicines?.generic_name, i.brand_name, i.batch_number].some(v => v?.toLowerCase().includes(q))
     if (!matchSearch) return false
-    if (filter === 'low')      return unreserved > 0 && unreserved < i.reorder_level
+    if (filter === 'low')      return u > 0 && u < i.reorder_level
     if (filter === 'out')      return i.quantity_available === 0
     if (filter === 'expiring') return days !== null && days >= 0 && days <= (facility?.near_expiry_threshold_days ?? 90)
     if (filter === 'reserved') return i.quantity_reserved > 0
@@ -86,10 +83,10 @@ export default function InventoryPage() {
     <div>
       <div className="page-top">
         <div>
-          <div className="page-eyebrow">MEDICINE INVENTORY</div>
-          <div className="page-title">Inventory</div>
+          <div className="page-eyebrow">My Facility · Inventory</div>
+          <div className="page-title">Facility Inventory</div>
           <div className="page-subtitle">
-            {items.length} active batch{items.length !== 1 ? 'es' : ''} · {facility?.default_currency}
+            Your inventory powers local medicine availability intelligence — stock you add becomes visible to the network
           </div>
         </div>
         <div className="page-actions">
@@ -97,12 +94,23 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      {/* Network framing banner */}
+      {items.length > 0 && (
+        <div className="inline-alert alert-info" style={{ marginBottom: 16 }}>
+          <span className="inline-alert-icon">ℹ</span>
+          <div style={{ fontSize: 12 }}>
+            <strong>{items.length} active batch{items.length !== 1 ? 'es' : ''}</strong> published to the medicine availability network.
+            Other verified facilities can locate and request this stock when facing shortages.
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="toolbar">
         <div className="toolbar-left">
           <div className="search-field">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <input
               placeholder="Search medicine, brand, batch…"
@@ -128,9 +136,7 @@ export default function InventoryPage() {
           </div>
         </div>
         <div className="toolbar-right">
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {filtered.length} item{filtered.length !== 1 ? 's' : ''}
-          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{filtered.length} item{filtered.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
@@ -157,39 +163,44 @@ export default function InventoryPage() {
                 <td colSpan={8}>
                   <EmptyState
                     title="No inventory items"
-                    description="Start tracking medicine availability — create your first inventory batch to monitor stock levels, expiry risk, and transfer availability."
+                    description="Add inventory to make your facility visible in the medicine availability network. Other verified facilities and clinics will be able to locate medicines at your facility and request transfers when they face shortages."
                     actions={<>
-                      <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}>Add stock</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}>Add stock batch</button>
                       <button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')}>Clear filters</button>
                     </>}
                   />
                 </td>
               </tr>
             ) : filtered.map(item => {
-              const unreserved = item.quantity_available - item.quantity_reserved
+              const available = item.quantity_available - item.quantity_reserved
               return (
                 <tr key={item.id}>
                   <td>
-                    <div className="td-primary truncate" style={{ maxWidth: 180 }}>
-                      {item.medicines?.generic_name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div className="td-primary truncate" style={{ maxWidth: 170 }}>
+                        {item.medicines?.generic_name}
+                      </div>
+                      {item.medicines?.essential_medicine && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-dim)', border: '1px solid var(--primary-border)', borderRadius: 'var(--r-xs)', padding: '1px 4px', flexShrink: 0 }}>
+                          ESSENTIAL
+                        </span>
+                      )}
                     </div>
                     <div className="td-muted">
                       {item.brand_name ? `${item.brand_name} · ` : ''}
                       {item.medicines?.strength} {item.medicines?.dosage_form}
                     </div>
                   </td>
+                  <td><span className="pill">{item.batch_number}</span></td>
                   <td>
-                    <span className="pill">{item.batch_number}</span>
-                  </td>
-                  <td>
-                    <Badge className={stockStatusClass(unreserved, item.reorder_level)} dot>
-                      {stockStatusLabel(unreserved, item.reorder_level)}
+                    <Badge className={stockStatusClass(available, item.reorder_level)} dot>
+                      {stockStatusLabel(available, item.reorder_level)}
                     </Badge>
                   </td>
                   <td>
                     <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 12 }}
                       title="Excludes stock reserved for pending transfers">
-                      {fmtNumber(unreserved)}
+                      {fmtNumber(available)}
                     </span>
                     {item.quantity_reserved > 0 && (
                       <div style={{ fontSize: 10, color: 'var(--warning)', marginTop: 1 }}>
@@ -198,10 +209,7 @@ export default function InventoryPage() {
                     )}
                   </td>
                   <td>
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 12,
-                      color: unreserved < item.reorder_level ? 'var(--warning)' : 'var(--text-muted)'
-                    }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: available < item.reorder_level ? 'var(--warning)' : 'var(--text-muted)' }}>
                       {item.reorder_level}
                     </span>
                   </td>
@@ -229,7 +237,6 @@ export default function InventoryPage() {
         </table>
       </div>
 
-      {/* Modals */}
       {addOpen  && <AddModal  facilityId={facilityId} medicines={medicines} suppliers={suppliers} currency={facility?.default_currency} onClose={() => setAddOpen(false)}  onSuccess={() => { setAddOpen(false);  load() }} />}
       {adjItem  && <AdjModal  item={adjItem}  onClose={() => setAdjItem(null)}  onSuccess={() => { setAdjItem(null);  load() }} />}
       {editItem && <EditModal item={editItem} isAdmin={isAdmin} suppliers={suppliers} currency={facility?.default_currency} onClose={() => setEditItem(null)} onSuccess={() => { setEditItem(null); load() }} />}
@@ -237,7 +244,6 @@ export default function InventoryPage() {
   )
 }
 
-/* ── ADD MODAL ── */
 function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSuccess }) {
   const [f, setF] = useState({
     medicine_id: '', batch_number: '', expiry_date: '', quantity: '', reorder_level: 10,
@@ -257,25 +263,25 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
       p_expiry_date:      f.expiry_date,
       p_quantity:         Number(f.quantity),
       p_reorder_level:    Number(f.reorder_level),
-      p_brand_name:       f.brand_name  || null,
-      p_supplier_id:      f.supplier_id || null,
+      p_brand_name:       f.brand_name       || null,
+      p_supplier_id:      f.supplier_id      || null,
       p_manufacture_date: f.manufacture_date || null,
-      p_unit_cost:        f.unit_cost    ? Number(f.unit_cost)    : null,
-      p_selling_price:    f.selling_price? Number(f.selling_price): null,
+      p_unit_cost:        f.unit_cost        ? Number(f.unit_cost)    : null,
+      p_selling_price:    f.selling_price    ? Number(f.selling_price): null,
       p_storage_condition:f.storage_condition,
       p_storage_location: f.storage_location || null,
-      p_notes:            f.notes || null,
+      p_notes:            f.notes            || null,
     })
     if (err) { setError(err.message); setLoading(false); return }
     onSuccess()
   }
 
   return (
-    <Modal title="Add stock batch" subtitle="All stock creation is logged with an initial receipt movement" onClose={onClose} size="modal-lg"
+    <Modal title="Add stock batch" subtitle="Stock you add becomes visible to the medicine availability network" onClose={onClose} size="modal-lg"
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" form="add-form" type="submit" disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Adding…</> : 'Add batch'}
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }}/> Adding…</> : 'Add to network'}
         </button>
       </>}
     >
@@ -292,14 +298,8 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
               </select>
             </div>
             <div className="grid-2">
-              <div className="field">
-                <label>Batch number *</label>
-                <input required value={f.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="e.g. BT-2024-001" />
-              </div>
-              <div className="field">
-                <label>Brand name</label>
-                <input value={f.brand_name} onChange={e => set('brand_name', e.target.value)} placeholder="Optional" />
-              </div>
+              <div className="field"><label>Batch number *</label><input required value={f.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="e.g. BT-2024-001" /></div>
+              <div className="field"><label>Brand name</label><input value={f.brand_name} onChange={e => set('brand_name', e.target.value)} placeholder="Optional" /></div>
             </div>
           </div>
         </div>
@@ -310,38 +310,26 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
               <div className="field">
                 <label>Initial quantity *</label>
                 <input type="number" required min={0} value={f.quantity} onChange={e => set('quantity', e.target.value)} />
-                <div className="field-hint">Units received into stock</div>
+                <div className="field-hint">Units received — published to availability network</div>
               </div>
               <div className="field">
                 <label>Reorder level</label>
                 <input type="number" min={0} value={f.reorder_level} onChange={e => set('reorder_level', e.target.value)} />
-                <div className="field-hint">Alert triggers below this quantity</div>
+                <div className="field-hint">Shortage alert fires below this quantity</div>
               </div>
             </div>
             <div className="grid-2">
-              <div className="field">
-                <label>Expiry date *</label>
-                <input type="date" required value={f.expiry_date} min={new Date().toISOString().slice(0,10)} onChange={e => set('expiry_date', e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Manufacture date</label>
-                <input type="date" value={f.manufacture_date} onChange={e => set('manufacture_date', e.target.value)} />
-              </div>
+              <div className="field"><label>Expiry date *</label><input type="date" required value={f.expiry_date} onChange={e => set('expiry_date', e.target.value)} /></div>
+              <div className="field"><label>Manufacture date</label><input type="date" value={f.manufacture_date} onChange={e => set('manufacture_date', e.target.value)} /></div>
             </div>
           </div>
         </div>
         <div>
-          <div className="form-section-title">Pricing & Supply Chain</div>
+          <div className="form-section-title">Supply Chain</div>
           <div className="form-section" style={{ marginTop: 12 }}>
             <div className="grid-2">
-              <div className="field">
-                <label>Unit cost ({currency})</label>
-                <input type="number" min={0} step="0.01" value={f.unit_cost} onChange={e => set('unit_cost', e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Selling price ({currency})</label>
-                <input type="number" min={0} step="0.01" value={f.selling_price} onChange={e => set('selling_price', e.target.value)} />
-              </div>
+              <div className="field"><label>Unit cost ({currency})</label><input type="number" min={0} step="0.01" value={f.unit_cost} onChange={e => set('unit_cost', e.target.value)} /></div>
+              <div className="field"><label>Selling price ({currency})</label><input type="number" min={0} step="0.01" value={f.selling_price} onChange={e => set('selling_price', e.target.value)} /></div>
             </div>
             <div className="grid-2">
               <div className="field">
@@ -358,14 +346,7 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                 </select>
               </div>
             </div>
-            <div className="field">
-              <label>Storage location</label>
-              <input value={f.storage_location} onChange={e => set('storage_location', e.target.value)} placeholder="e.g. Shelf B2, Cold Room 1" />
-            </div>
-            <div className="field">
-              <label>Notes</label>
-              <textarea value={f.notes} onChange={e => set('notes', e.target.value)} placeholder="Internal notes about this batch" />
-            </div>
+            <div className="field"><label>Storage location</label><input value={f.storage_location} onChange={e => set('storage_location', e.target.value)} placeholder="e.g. Shelf B2, Cold Room 1" /></div>
           </div>
         </div>
       </form>
@@ -373,16 +354,14 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
   )
 }
 
-/* ── ADJUST QUANTITY MODAL ── */
 function AdjModal({ item, onClose, onSuccess }) {
   const [movType, setMovType] = useState('receipt')
   const [qty,     setQty]     = useState('')
   const [notes,   setNotes]   = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
-
-  const isOut = ['dispensed','expired_removal','return'].includes(movType)
-  const unreserved = item.quantity_available - item.quantity_reserved
+  const isOut    = ['dispensed','expired_removal','return'].includes(movType)
+  const available = item.quantity_available - item.quantity_reserved
 
   async function handleSubmit(e) {
     e.preventDefault(); setError(null); setLoading(true)
@@ -398,20 +377,15 @@ function AdjModal({ item, onClose, onSuccess }) {
   }
 
   return (
-    <Modal title="Adjust stock quantity"
-      subtitle="Changes are recorded in the inventory movement log"
-      onClose={onClose} size="modal-sm"
+    <Modal title="Adjust stock quantity" subtitle="All movements are logged to the inventory audit trail" onClose={onClose} size="modal-sm"
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" form="adj-form" type="submit" disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Saving…</> : 'Save movement'}
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }}/> Saving…</> : 'Save movement'}
         </button>
       </>}
     >
-      <ContextCard
-        title={item.medicines?.generic_name}
-        meta={`Batch ${item.batch_number} · ${fmtNumber(unreserved)} units available`}
-      />
+      <ContextCard title={item.medicines?.generic_name} meta={`Batch ${item.batch_number} · ${fmtNumber(available)} units available`} />
       <InlineError message={error} />
       <form id="adj-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="field">
@@ -422,9 +396,7 @@ function AdjModal({ item, onClose, onSuccess }) {
         </div>
         <div className="field">
           <label>Quantity *</label>
-          <input type="number" required min={1} value={qty} onChange={e => setQty(e.target.value)}
-            placeholder={isOut ? 'Units going out' : 'Units coming in'} />
-          {isOut && <div className="field-hint">Stock will be reduced by this amount</div>}
+          <input type="number" required min={1} value={qty} onChange={e => setQty(e.target.value)} placeholder={isOut ? 'Units going out' : 'Units coming in'} />
         </div>
         <div className="field">
           <label>Notes</label>
@@ -435,22 +407,19 @@ function AdjModal({ item, onClose, onSuccess }) {
   )
 }
 
-/* ── EDIT METADATA MODAL ── */
-// quantity_available and quantity_reserved are intentionally absent
 function EditModal({ item, isAdmin, suppliers, currency, onClose, onSuccess }) {
   const [f, setF] = useState({
-    brand_name:       item.brand_name ?? '',
-    reorder_level:    item.reorder_level,
-    reorder_quantity: item.reorder_quantity ?? '',
-    expiry_date:      item.expiry_date,
-    manufacture_date: item.manufacture_date ?? '',
-    supplier_id:      item.supplier_id ?? '',
-    storage_condition:item.storage_condition,
-    storage_location: item.storage_location ?? '',
-    notes:            item.notes ?? '',
-    is_active:        item.is_active,
-    unit_cost:        item.unit_cost ?? '',
-    selling_price:    item.selling_price ?? '',
+    brand_name:        item.brand_name       ?? '',
+    reorder_level:     item.reorder_level,
+    expiry_date:       item.expiry_date,
+    manufacture_date:  item.manufacture_date ?? '',
+    supplier_id:       item.supplier_id      ?? '',
+    storage_condition: item.storage_condition,
+    storage_location:  item.storage_location ?? '',
+    notes:             item.notes            ?? '',
+    is_active:         item.is_active,
+    unit_cost:         item.unit_cost        ?? '',
+    selling_price:     item.selling_price    ?? '',
   })
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
@@ -459,15 +428,14 @@ function EditModal({ item, isAdmin, suppliers, currency, onClose, onSuccess }) {
   async function handleSubmit(e) {
     e.preventDefault(); setError(null); setLoading(true)
     const payload = {
-      brand_name:       f.brand_name  || null,
+      brand_name:       f.brand_name       || null,
       reorder_level:    Number(f.reorder_level),
-      reorder_quantity: f.reorder_quantity ? Number(f.reorder_quantity) : null,
       expiry_date:      f.expiry_date,
       manufacture_date: f.manufacture_date || null,
-      supplier_id:      f.supplier_id || null,
+      supplier_id:      f.supplier_id      || null,
       storage_condition:f.storage_condition,
       storage_location: f.storage_location || null,
-      notes:            f.notes || null,
+      notes:            f.notes            || null,
       is_active:        f.is_active,
       ...(isAdmin ? {
         unit_cost:    f.unit_cost    ? Number(f.unit_cost)    : null,
@@ -480,11 +448,11 @@ function EditModal({ item, isAdmin, suppliers, currency, onClose, onSuccess }) {
   }
 
   return (
-    <Modal title="Edit batch details" subtitle="Structural fields (medicine, batch number) cannot be changed after creation" onClose={onClose}
+    <Modal title="Edit batch details" subtitle="Medicine identity and batch number cannot be changed after creation" onClose={onClose}
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" form="edit-form" type="submit" disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }} /> Saving…</> : 'Save changes'}
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#07111f' }}/> Saving…</> : 'Save changes'}
         </button>
       </>}
     >
@@ -500,15 +468,7 @@ function EditModal({ item, isAdmin, suppliers, currency, onClose, onSuccess }) {
         </div>
         <div className="grid-2">
           <div className="field"><label>Expiry date</label><input type="date" value={f.expiry_date} onChange={e => set('expiry_date', e.target.value)} /></div>
-          <div className="field"><label>Storage condition</label>
-            <select value={f.storage_condition} onChange={e => set('storage_condition', e.target.value)}>
-              {STORAGE_CONDS.map(c => <option key={c} value={c}>{c.replace(/_/g,' ')}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="grid-2">
           <div className="field"><label>Reorder level</label><input type="number" min={0} value={f.reorder_level} onChange={e => set('reorder_level', e.target.value)} /></div>
-          <div className="field"><label>Storage location</label><input value={f.storage_location} onChange={e => set('storage_location', e.target.value)} placeholder="Shelf, room, etc." /></div>
         </div>
         {isAdmin && (
           <div className="grid-2">
@@ -516,10 +476,11 @@ function EditModal({ item, isAdmin, suppliers, currency, onClose, onSuccess }) {
             <div className="field"><label>Selling price ({currency})</label><input type="number" min={0} step="0.01" value={f.selling_price} onChange={e => set('selling_price', e.target.value)} /></div>
           </div>
         )}
+        <div className="field"><label>Storage location</label><input value={f.storage_location} onChange={e => set('storage_location', e.target.value)} placeholder="Shelf, room, etc." /></div>
         <div className="field"><label>Notes</label><textarea value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
         <label className="checkbox-row">
           <input type="checkbox" checked={f.is_active} onChange={e => set('is_active', e.target.checked)} />
-          <span>Batch is active and available for tracking</span>
+          <span>Batch is active and visible in the medicine network</span>
         </label>
       </form>
     </Modal>
