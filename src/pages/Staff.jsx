@@ -51,10 +51,10 @@ export default function StaffPage() {
     <div>
       <div className="page-top">
         <div>
-          <div className="page-eyebrow">STAFF MANAGEMENT</div>
+          <div className="page-eyebrow">My Facility · Team</div>
           <div className="page-title">Staff</div>
           <div className="page-subtitle">
-            {activeStaff.length} active team member{activeStaff.length !== 1 ? 's' : ''}
+            {activeStaff.length} active team member{activeStaff.length !== 1 ? 's' : ''} · manage access to this network node
           </div>
         </div>
         <div className="page-actions">
@@ -89,7 +89,7 @@ export default function StaffPage() {
           {activeStaff.length === 0 ? (
             <EmptyState
               title="No staff members"
-              description="Invite colleagues to join your facility and access the inventory system."
+              description="Add team members to manage inventory, monitor shortage signals, and coordinate stock redistribution at this facility."
               actions={isAdmin && <button className="btn btn-primary btn-sm" onClick={() => setInviteOpen(true)}>Invite staff</button>}
             />
           ) : (
