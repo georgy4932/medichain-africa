@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
 import LandingPage    from './pages/Landing'
+import DocsPage       from './pages/Docs'
 import AuthPage       from './pages/Auth'
 import OnboardingPage from './pages/Onboarding'
 import AppShell       from './components/layout/AppShell'
@@ -42,6 +43,9 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public docs page — no auth required */}
+      <Route path="/docs" element={<DocsPage />} />
+
       {/* Public landing page — no auth required */}
       <Route
         path="/"
