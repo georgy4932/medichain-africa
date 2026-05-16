@@ -4,11 +4,17 @@ import { supabase } from '../lib/supabase'
 import { useFacility } from '../hooks/useFacility'
 import { fmtDate, fmtNumber, facilityTypeLabel } from '../utils/formatters'
 import { EmptyState, Badge } from '../components/shared'
+import UnverifiedGate from '../components/shared/UnverifiedGate'
 
 const DOSAGE_FORMS = ['','tablet','capsule','syrup','suspension','injection','infusion','cream','ointment','drops','inhaler','suppository','patch','powder','other']
 
 export default function SearchPage() {
   const { facilityId, facility } = useFacility()
+
+  // Gate — unverified facilities cannot search the network
+  if (facility && !facility.is_verified) {
+    return <UnverifiedGate page="Medicine Network" reason="Search is restricted to verified facilities to maintain network integrity and protect facility data." />
+  }
   const navigate = useNavigate()
   const [query,    setQuery]    = useState('')
   const [country,  setCountry]  = useState(facility?.country ?? '')
@@ -104,7 +110,7 @@ export default function SearchPage() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                Only verified facility stock is shown. Contact details are shared after a transfer request is submitted.
+                Only verified facilities appear in search results. Unverified facilities are hidden from the network until their registration is confirmed.
               </div>
               <button type="submit" className="btn btn-primary" disabled={loading} style={{ minWidth: 160, flexShrink: 0 }}>
                 {loading
