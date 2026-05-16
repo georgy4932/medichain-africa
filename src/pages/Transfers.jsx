@@ -31,7 +31,7 @@ export default function TransfersPage() {
     setLoading(true)
     let q = supabase
       .from('transfer_requests')
-      .select(`id,status,urgency,quantity_requested,quantity_approved,quantity_fulfilled,reason,notes,created_at,
+      .select(`id,status,urgency,quantity_requested,quantity_approved,quantity_fulfilled,reason,notes,created_at,fulfilled_at,receipt_confirmed,
         medicines(generic_name,strength),
         requesting:requesting_facility_id(id,name,city),
         supplying:supplying_facility_id(id,name,city)`)
@@ -188,6 +188,45 @@ function TransferCard({ transfer: t, facilityId, onAction }) {
         {isRequesting && ['pending','approved','in_transit'].includes(t.status) && (
           <button className="btn btn-ghost btn-sm" onClick={() => onAction('cancel')}>Cancel request</button>
         )}
+        {isRequesting && t.status === 'fulfilled' && !t.receipt_confirmed && (() => {
+          const fulfilledAt  = t.fulfilled_at ? new Date(t.fulfilled_at) : null
+          const hoursLeft    = fulfilledAt ? Math.max(0, 48 - Math.floor((Date.now() - fulfilledAt) / 3600000)) : 48
+          const autoCloseIn  = hoursLeft > 0 ? `${hoursLeft}h` : 'soon'
+          const autoClosing  = hoursLeft === 0
+          return (
+            <div style={{
+              width: '100%', marginTop: 4,
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              padding: '12px 14px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+                Did you receive this stock?
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: 10 }}>
+                {autoClosing
+                  ? 'The 48-hour window has passed. This transfer will auto-confirm shortly.'
+                  : <>The supplier has marked this transfer as delivered. Confirm receipt or report non-delivery within <strong style={{color:'var(--text-secondary)'}}>{autoCloseIn}</strong>. After that, the transfer auto-confirms.</>
+                }
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-success btn-sm" onClick={() => onAction('confirm_receipt')}>
+                  ✓ Confirm receipt
+                </button>
+                <button className="btn btn-danger btn-sm" onClick={() => onAction('dispute')}>
+                  Report non-delivery
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+        {isRequesting && t.status === 'fulfilled' && t.receipt_confirmed && (
+          <div style={{ fontSize: 11.5, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            Receipt confirmed
+          </div>
+        )}
       </div>
     </div>
   )
@@ -311,6 +350,8 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
     cancel:     'Cancel transfer request',
     in_transit: 'Mark stock as dispatched',
     fulfill:    'Confirm stock delivery',
+    dispute:         'Report non-delivery',
+    confirm_receipt: 'Confirm stock received'
   }
 
   async function handleSubmit(e) {
@@ -331,6 +372,18 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
     } else if (type === 'fulfill') {
       const res = await supabase.rpc('fulfill_transfer_request', { p_request_id: transfer.id, p_quantity_fulfilled: Number(f.quantity), p_notes: f.notes || null })
       err = res.error
+    } else if (type === 'dispute') {
+      const res = await supabase
+        .from('transfer_requests')
+        .update({ status: 'disputed', notes: f.notes || 'Requesting facility reports stock was not received.' })
+        .eq('id', transfer.id)
+      err = res.error
+    } else if (type === 'confirm_receipt') {
+      const res = await supabase
+        .from('transfer_requests')
+        .update({ receipt_confirmed: true })
+        .eq('id', transfer.id)
+      err = res.error
     }
     if (err) { setError(err.message); setLoading(false); return }
     onSuccess()
@@ -342,6 +395,8 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
     cancel:     { label: 'Cancel request',   cls: 'btn-danger' },
     in_transit: { label: 'Mark dispatched',  cls: 'btn-secondary' },
     fulfill:    { label: 'Confirm delivery', cls: 'btn-primary' },
+    dispute:         { label: 'Report non-delivery',   cls: 'btn-danger'  },
+    confirm_receipt: { label: 'Confirm receipt',        cls: 'btn-success' },
   }
 
   return (
@@ -358,6 +413,12 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
         meta={`Requested: ${fmtNumber(transfer.quantity_requested)} units${transfer.quantity_approved ? ` · Approved: ${fmtNumber(transfer.quantity_approved)}` : ''}`}
       />
       <InlineError message={error} />
+      {type === 'confirm_receipt' && (
+        <div className="inline-alert alert-info">
+          <span className="inline-alert-icon">ℹ</span>
+          <span>Confirming that you physically received the stock from <strong>{transfer.supplying?.name}</strong>. This closes the transfer permanently.</span>
+        </div>
+      )}
       <form id="action-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {type === 'approve' && (
           <>
@@ -387,7 +448,7 @@ function ActionModal({ action: { type, transfer }, facilityId, onClose, onSucces
               value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: e.target.value }))} />
           </div>
         )}
-        {['reject','cancel','in_transit'].includes(type) && (
+        {['reject','cancel','in_transit','dispute'].includes(type) && type !== 'confirm_receipt' && (
           <div className="field">
             <label>Notes {type === 'reject' ? '(reason) *' : '(optional)'}</label>
             <textarea value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))}
