@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useFacility } from '../hooks/useFacility'
 import { fmtDate, fmtRelative, alertTypeLabel, alertTypeClass } from '../utils/formatters'
 import { Badge, EmptyState, SpinnerCenter } from '../components/shared'
+import UnverifiedGate from '../components/shared/UnverifiedGate'
 
 const FILTER_TABS = [
   { key: 'active',       label: 'Active' },
@@ -19,7 +20,11 @@ const RECOMMENDED_ACTIONS = {
 }
 
 export default function AlertsPage() {
-  const { facilityId } = useFacility()
+  const { facilityId, facility } = useFacility()
+
+  if (facility && !facility.is_verified) {
+    return <UnverifiedGate page="Shortage Alerts" reason="Alert monitoring is available once your facility is verified and active on the network." />
+  }
   const [alerts,  setAlerts]  = useState([])
   const [filter,  setFilter]  = useState('active')
   const [loading, setLoading] = useState(true)
