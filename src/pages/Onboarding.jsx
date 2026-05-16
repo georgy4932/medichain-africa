@@ -117,9 +117,10 @@ export default function OnboardingPage() {
                     </select>
                   </div>
                   <div className="field">
-                    <label>Registration number</label>
-                    <input placeholder="PCN / NAFDAC / PPB"
+                    <label>Registration number *</label>
+                    <input required placeholder="PCN / NAFDAC / PPB"
                       value={form.registration_number} onChange={e => set('registration_number', e.target.value)} />
+                    <div className="field-hint">Required for network verification. Unverified facilities are hidden from medicine search results until verified.</div>
                   </div>
                 </div>
                 <div className="grid-2">
