@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
+import AdminPage     from './pages/Admin'
 import LandingPage    from './pages/Landing'
 import DocsPage       from './pages/Docs'
 import AuthPage       from './pages/Auth'
@@ -43,6 +44,9 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Admin panel — system_admin only */}
+      <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+
       {/* Public docs page — no auth required */}
       <Route path="/docs" element={<DocsPage />} />
 
