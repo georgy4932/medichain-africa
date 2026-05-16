@@ -7,6 +7,7 @@ import {
   transferStatusClass, transferStatusLabel, urgencyClass,
 } from '../utils/formatters'
 import { Modal, InlineError, EmptyState, Badge, SpinnerCenter, TransferPipeline, ContextCard } from '../components/shared'
+import UnverifiedGate from '../components/shared/UnverifiedGate'
 
 const TABS = [
   { key: 'all',      label: 'All requests' },
@@ -16,7 +17,11 @@ const TABS = [
 ]
 
 export default function TransfersPage() {
-  const { facilityId } = useFacility()
+  const { facilityId, facility } = useFacility()
+
+  if (facility && !facility.is_verified) {
+    return <UnverifiedGate page="Redistribution" reason="Stock transfers are restricted to verified facilities. Verification ensures all parties in a transfer are legitimate healthcare providers." />
+  }
   const location       = useLocation()
   const prefill        = location.state?.prefill ?? null
   const [transfers, setTransfers] = useState([])
