@@ -8,7 +8,7 @@ import { fmtRelative, fmtDate, fmtNumber } from '../utils/formatters'
 const FLAG_QTY_THRESHOLD = 5000
 
 export default function AdminPage() {
-  const { profile } = useAuth()
+  const { profile, signOut } = useAuth()
   const navigate    = useNavigate()
   const [tab,       setTab]       = useState('facilities')
   const [facilities, setFacilities] = useState([])
@@ -179,7 +179,14 @@ export default function AdminPage() {
                   ⚡ {pending.length} pending verification{pending.length !== 1 ? 's' : ''}
                 </div>
               )}
-              <a href="/dashboard" style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>← Back to app</a>
+              <button
+                onClick={async () => { await signOut(); navigate('/auth') }}
+                style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '5px 12px', cursor: 'pointer', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.target.style.color = 'var(--danger)'; e.target.style.borderColor = 'var(--danger-border)' }}
+                onMouseLeave={e => { e.target.style.color = 'var(--text-muted)'; e.target.style.borderColor = 'var(--border)' }}
+              >
+                Sign out
+              </button>
             </div>
           </div>
 
