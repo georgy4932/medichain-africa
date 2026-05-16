@@ -101,6 +101,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Verification banner — shown to unverified facilities */}
+      {!facility?.is_verified && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 14,
+          padding: '14px 18px', marginBottom: 16,
+          background: 'rgba(245,165,36,0.06)',
+          border: '1px solid rgba(245,165,36,0.2)',
+          borderRadius: 'var(--r-lg)',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" strokeWidth="2" style={{flexShrink:0, marginTop:1}}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13, fontWeight:600, color:'var(--warning)', marginBottom:3}}>
+              Verification pending
+            </div>
+            <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.6}}>
+              Your facility is not yet visible in the medicine availability network. Other facilities cannot find your stock or request transfers until verification is complete.
+              {facility?.registration_number
+                ? <span> Your registration number <strong style={{color:'var(--text-primary)'}}>{facility.registration_number}</strong> has been submitted and is under review.</span>
+                : <span> Please add your PCN/NAFDAC registration number in <a href="/settings" style={{color:'var(--warning)'}}>Settings → Network Identity</a> to begin verification.</span>
+              }
+            </div>
+            <div style={{fontSize:11, color:'var(--text-muted)', marginTop:6}}>
+              To expedite: email <a href="mailto:hello@medichain.africa" style={{color:'var(--warning)'}}>hello@medichain.africa</a> with your facility name and registration number.
+            </div>
+          </div>
+          <div style={{
+            flexShrink:0, padding:'3px 10px',
+            background:'rgba(245,165,36,0.12)',
+            border:'1px solid rgba(245,165,36,0.25)',
+            borderRadius:'var(--r-xs)',
+            fontSize:10, fontWeight:700, textTransform:'uppercase',
+            letterSpacing:'0.08em', color:'var(--warning)',
+          }}>Unverified</div>
+        </div>
+      )}
+
       {/* Zero state — network framing */}
       {!hasInventory && !loading && (
         <div className="card card-pad" style={{ marginBottom: 20, borderColor: 'var(--primary-border)', background: 'var(--primary-dim)' }}>
