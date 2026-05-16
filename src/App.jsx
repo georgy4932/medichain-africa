@@ -39,8 +39,10 @@ function RequireFacility({ children }) {
 }
 
 function AppRoutes() {
-  const { session, facility, loading } = useAuth()
+  const { session, facility, profile, loading } = useAuth()
   if (loading) return <GlobalSpinner />
+
+  const isSysAdmin = profile?.role === 'system_admin'
 
   return (
     <Routes>
@@ -55,7 +57,9 @@ function AppRoutes() {
         path="/"
         element={
           session
-            ? <Navigate to={facility ? '/dashboard' : '/onboarding'} replace />
+            ? isSysAdmin
+              ? <Navigate to="/admin" replace />
+              : <Navigate to={facility ? '/dashboard' : '/onboarding'} replace />
             : <LandingPage />
         }
       />
@@ -64,7 +68,9 @@ function AppRoutes() {
         path="/auth"
         element={
           session
-            ? <Navigate to={facility ? '/dashboard' : '/onboarding'} replace />
+            ? isSysAdmin
+              ? <Navigate to="/admin" replace />
+              : <Navigate to={facility ? '/dashboard' : '/onboarding'} replace />
             : <AuthPage />
         }
       />
@@ -73,9 +79,11 @@ function AppRoutes() {
         path="/onboarding"
         element={
           <RequireAuth>
-            {facility
-              ? <Navigate to="/dashboard" replace />
-              : <OnboardingPage />
+            {isSysAdmin
+              ? <Navigate to="/admin" replace />
+              : facility
+                ? <Navigate to="/dashboard" replace />
+                : <OnboardingPage />
             }
           </RequireAuth>
         }
