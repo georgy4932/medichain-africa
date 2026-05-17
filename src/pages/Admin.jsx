@@ -438,6 +438,7 @@ export default function AdminPage() {
                       <th>Medicine</th>
                       <th>Strength / Form</th>
                       <th>NAFDAC Reg Number</th>
+                      <th>Pack sizes</th>
                       <th>ATC Code</th>
                       <th>Essential</th>
                       <th>Status</th>
@@ -454,6 +455,59 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function PackSizesCell({ medicine: m, onSave }) {
+  const [editing, setEditing] = useState(false)
+  const [input,   setInput]   = useState('')
+  const sizes = m.standard_pack_sizes ?? []
+
+  function startEdit() {
+    setInput(sizes.join(', '))
+    setEditing(true)
+  }
+
+  async function save() {
+    const parsed = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0)
+    await onSave(m.id, parsed.length > 0 ? parsed : null)
+    setEditing(false)
+  }
+
+  if (editing) return (
+    <div style={{display:'flex', gap:4, alignItems:'center', flexWrap:'wrap'}}>
+      <input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        placeholder="28, 56, 84"
+        style={{
+          background:'var(--bg-surface)', border:'1px solid var(--primary)',
+          borderRadius:'var(--r-sm)', color:'var(--text-primary)',
+          padding:'3px 7px', fontSize:11, fontFamily:'var(--font-mono)',
+          width:100, outline:'none',
+        }}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+        autoFocus
+      />
+      <button className="btn btn-success btn-xs" onClick={save}>Save</button>
+      <button className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
+    </div>
+  )
+
+  return (
+    <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
+      {sizes.length > 0
+        ? sizes.map(s => (
+            <span key={s} style={{
+              fontFamily:'var(--font-mono)', fontSize:10, fontWeight:600,
+              background:'var(--bg-primary)', border:'1px solid var(--border)',
+              borderRadius:'var(--r-xs)', padding:'1px 6px', color:'var(--text-secondary)',
+            }}>{s}</span>
+          ))
+        : <span style={{fontSize:11, color:'var(--warning)'}}>Not set</span>
+      }
+      <button className="btn btn-ghost btn-xs" onClick={startEdit}>{sizes.length > 0 ? 'Edit' : 'Add'}</button>
     </div>
   )
 }
@@ -505,7 +559,13 @@ function MedicineRow({ medicine: m, onUpdate }) {
           </div>
         )}
       </td>
-      <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{m.atc_code || '—'}</span></td>
+      <td>
+        <PackSizesCell medicine={m} onSave={async (id, sizes) => {
+          const { error } = await supabase.from('medicines').update({ standard_pack_sizes: sizes }).eq('id', id)
+          if (!error) showToast('Pack sizes updated')
+          else showToast('Failed: ' + error.message, 'error')
+        }} />
+      </td>
       <td>{m.essential_medicine ? <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>✓ Essential</span> : <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>}</td>
       <td><span style={{ fontSize: 11, color: m.is_active ? 'var(--success)' : 'var(--text-disabled)' }}>{m.is_active ? 'Active' : 'Inactive'}</span></td>
     </tr>
