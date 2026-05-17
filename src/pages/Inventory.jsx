@@ -270,7 +270,7 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
       p_medicine_id:      f.medicine_id,
       p_batch_number:     f.batch_number,
       p_expiry_date:      f.expiry_date,
-      p_quantity:         f.quantity_type === 'packs'
+      p_quantity:         f.quantity_type === 'packs' && f.pack_size && f.pack_size !== '' && f.pack_size !== 'custom'
                           ? Number(f.quantity) * Number(f.pack_size)
                           : Number(f.quantity),
       p_dispensing_unit:  f.dispensing_unit,
@@ -375,16 +375,20 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                           : null
                         return sizes ? (
                           <select value={f.pack_size} onChange={e => set('pack_size', e.target.value)}>
+                            <option value="">— Select pack size —</option>
                             {sizes.map(s => (
                               <option key={s} value={s}>{s} {f.dispensing_unit}s per pack</option>
                             ))}
                             <option value="custom">Other (enter manually)</option>
                           </select>
                         ) : (
-                          <input type="number" min={1} value={f.pack_size}
-                            onChange={e => set('pack_size', e.target.value)}
-                            placeholder="e.g. 28, 30, 56, 100"
-                          />
+                          <select value={f.pack_size} onChange={e => set('pack_size', e.target.value)}>
+                            <option value="">— Select pack size —</option>
+                            {[7,10,14,28,30,56,60,84,100,120,500].map(s => (
+                              <option key={s} value={s}>{s} {f.dispensing_unit}s per pack</option>
+                            ))}
+                            <option value="custom">Other (enter manually)</option>
+                          </select>
                         )
                       })()}
                       {String(f.pack_size) === 'custom' && (
@@ -400,9 +404,9 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                         Check the number of {f.dispensing_unit}s printed on the packaging
                       </div>
                     </div>
-                    {f.quantity && f.pack_size && (
+                    {f.quantity && f.pack_size && f.pack_size !== '' && f.pack_size !== 'custom' && Number(f.pack_size) > 1 && (
                       <div style={{paddingTop:20, fontSize:12, color:'var(--primary)', fontFamily:'var(--font-mono)', whiteSpace:'nowrap', fontWeight:600}}>
-                        = {(Number(f.quantity) * Number(f.pack_size)).toLocaleString()} units total
+                        = {(Number(f.quantity) * Number(f.pack_size)).toLocaleString()} {f.dispensing_unit}s total
                       </div>
                     )}
                   </div>
