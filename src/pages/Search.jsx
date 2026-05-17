@@ -220,7 +220,9 @@ function ResultTable({ results, onRequest }) {
                 <span style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--primary)' }}>
                   {fmtNumber(r.total_available)}
                 </span>
-                <div className="td-muted">units available</div>
+                <div className="td-muted">
+                  {r.dispensing_unit ? `${r.dispensing_unit}s` : 'units'} available
+                </div>
               </td>
               <td className="td-muted">{fmtDate(r.earliest_expiry_date)}</td>
               <td><span className="pill">{r.batch_count}</span></td>
