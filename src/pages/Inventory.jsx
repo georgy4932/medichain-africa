@@ -51,7 +51,7 @@ export default function InventoryPage() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    supabase.from('medicines').select('id, generic_name, dosage_form, strength, nafdac_reg_number, atc_code').eq('is_active', true).order('generic_name')
+    supabase.from('medicines').select('id, generic_name, dosage_form, strength, nafdac_reg_number, atc_code, standard_pack_sizes').eq('is_active', true).order('generic_name')
       .then(({ data }) => setMedicines(data ?? []))
     if (facilityId)
       supabase.from('suppliers').select('id, name').eq('facility_id', facilityId)
@@ -367,11 +367,36 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                 {f.quantity_type === 'packs' && (
                   <div style={{display:'flex', gap:8, alignItems:'center', marginTop:6}}>
                     <div style={{flex:1}}>
-                      <label style={{fontSize:11,marginBottom:4,display:'block'}}>Pack size (units per pack)</label>
-                      <input type="number" min={1} value={f.pack_size}
-                        onChange={e => set('pack_size', e.target.value)}
-                        placeholder="e.g. 28"
-                      />
+                      <label style={{fontSize:11,marginBottom:4,display:'block'}}>Pack size</label>
+                      {(() => {
+                        const selected = medicines.find(m => m.id === f.medicine_id)
+                        const sizes = selected?.standard_pack_sizes?.length > 0
+                          ? selected.standard_pack_sizes
+                          : null
+                        return sizes ? (
+                          <select value={f.pack_size} onChange={e => set('pack_size', e.target.value)}>
+                            {sizes.map(s => (
+                              <option key={s} value={s}>{s} {f.dispensing_unit}s per pack</option>
+                            ))}
+                            <option value="custom">Other (enter manually)</option>
+                          </select>
+                        ) : (
+                          <input type="number" min={1} value={f.pack_size}
+                            onChange={e => set('pack_size', e.target.value)}
+                            placeholder="e.g. 28, 30, 56, 100"
+                          />
+                        )
+                      })()}
+                      {String(f.pack_size) === 'custom' && (
+                        <input type="number" min={1}
+                          style={{marginTop:6}}
+                          placeholder="Enter pack size"
+                          onChange={e => set('pack_size', e.target.value === '' ? 'custom' : e.target.value)}
+                        />
+                      )}
+                      <div style={{fontSize:10,color:'var(--text-muted)',marginTop:3}}>
+                        Check the number of {f.dispensing_unit}s printed on the packaging
+                      </div>
                     </div>
                     {f.quantity && f.pack_size && (
                       <div style={{paddingTop:20, fontSize:12, color:'var(--primary)', fontFamily:'var(--font-mono)', whiteSpace:'nowrap', fontWeight:600}}>
