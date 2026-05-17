@@ -359,8 +359,8 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                   </div>
                   <div style={{minWidth:110}}>
                     <select value={f.quantity_type} onChange={e => {
-                      set('quantity_type', e.target.value)
-                      set('pack_size', '')
+                      const newType = e.target.value
+                      setF(p => ({ ...p, quantity_type: newType, pack_size: '' }))
                     }}>
                       <option value="units">Individual units</option>
                       <option value="packs">Packs</option>
@@ -407,11 +407,11 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                         Check the number of {f.dispensing_unit}s printed on the packaging
                       </div>
                     </div>
-                    {f.quantity && f.pack_size && f.pack_size !== '' && f.pack_size !== 'custom' && Number(f.pack_size) > 0 && (
-                      <div style={{paddingTop:20, fontSize:12, color:'var(--primary)', fontFamily:'var(--font-mono)', whiteSpace:'nowrap', fontWeight:600}}>
-                        = {(Number(f.quantity) * Number(f.pack_size)).toLocaleString()} {f.dispensing_unit}s total
-                      </div>
-                    )}
+                  </div>
+                )}
+                {f.quantity_type === 'packs' && f.quantity && f.pack_size && f.pack_size !== '' && f.pack_size !== 'custom' && Number(f.pack_size) > 1 && Number(f.quantity) > 0 && (
+                  <div style={{marginTop:8, padding:'10px 14px', background:'rgba(25,194,181,0.08)', border:'1px solid rgba(25,194,181,0.2)', borderRadius:'var(--r-md)', fontSize:13, color:'var(--primary)', fontFamily:'var(--font-mono)', fontWeight:700}}>
+                    {Number(f.quantity)} packs × {Number(f.pack_size)} {f.dispensing_unit}s = {(Number(f.quantity) * Number(f.pack_size)).toLocaleString()} {f.dispensing_unit}s total
                   </div>
                 )}
                 <div style={{marginTop:6}}>
