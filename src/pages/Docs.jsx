@@ -1,4 +1,4 @@
- // src/pages/Docs.jsx
+// src/pages/Docs.jsx
 // Public documentation — facility admins and technical users
 
 export default function DocsPage() {
@@ -215,6 +215,7 @@ export default function DocsPage() {
               <a href="#facility-types" className="d-sb-link">Facility types</a>
               <a href="#medicine-catalog" className="d-sb-link">Medicine catalog</a>
               <a href="#faq" className="d-sb-link">FAQ</a>
+              <a href="#uniqueness" className="d-sb-link">Is this unique?</a>
             </div>
             <div className="d-sb-divider"></div>
             <div className="d-sb-contact">
@@ -594,6 +595,14 @@ export default function DocsPage() {
             {/* FAQ */}
             <div className="d-section" id="faq">
               <div className="d-section-title">Frequently asked questions</div>
+              <div className="d-faq-item" id="uniqueness"><div className="d-faq-q">Is this concept unique? Does anything like this already exist?</div><div className="d-faq-a">Yes — MediChain Africa addresses a gap that is largely unbuilt in Africa. Existing solutions fall into different categories: government supply chain software like mSupply is complex, expensive, and designed for national health ministries, not individual facilities. Expiry tracking tools like Shelf Life are single-facility with no network layer. Drone delivery platforms like Zipline focus on logistics, not coordination. Patient-facing apps focus on pricing transparency, not facility-to-facility supply. None of them build what MediChain builds — a real-time availability network where facilities coordinate directly with each other to prevent stockouts. The concept of medicine supply coordination exists in developed markets through hospital supply chains and group purchasing organisations, but applying it as open network infrastructure at the facility level in Africa, where informal WhatsApp coordination is the current standard, is genuinely new.</div></div>
+
+              <div className="d-faq-item"><div className="d-faq-q">What makes MediChain Africa different from existing pharmacy software?</div><div className="d-faq-a">Most pharmacy software is single-facility — it helps one pharmacy manage its own inventory in isolation. MediChain is network infrastructure. The value is not in managing your own stock; it is in knowing what every other verified facility near you has in stock, being able to request it, and tracking that transfer to completion. The more facilities that join, the more valuable it becomes. That network effect is what makes it structurally different from any standalone inventory tool.</div></div>
+
+              <div className="d-faq-item"><div className="d-faq-q">Why hasn't this been built before?</div><div className="d-faq-a">The coordination problem requires trust infrastructure — facilities will only share their stock data if they trust that sensitive information (supplier details, cost pricing, reserved quantities) is protected from competitors. Building that trust layer correctly, with verified facilities, row-level data security, and structured transfer workflows, requires significant technical depth. WhatsApp groups are the current workaround because they are low-friction even if they are inefficient. MediChain replaces that informal coordination with a structured, auditable, and scalable alternative.</div></div>
+
+              <div className="d-faq-item"><div className="d-faq-q">Who are the competitors?</div><div className="d-faq-a">There are no direct competitors building facility-to-facility medicine availability networks at this level in Nigeria or West Africa. The closest adjacent players are mSupply (government-focused, complex), Shelf Life (single-facility expiry tracking), Zipline (drone logistics), and PharmAccess (patient and payment focus). None of them are building the network coordination layer that MediChain focuses on.</div></div>
+
               <div className="d-faq-item"><div className="d-faq-q">Is MediChain Africa free?</div><div className="d-faq-a">Yes — free for all facilities during the beta period. Any future pricing changes will be communicated with advance notice to all registered facilities.</div></div>
               <div className="d-faq-item"><div className="d-faq-q">Can other facilities see my prices or supplier details?</div><div className="d-faq-a">No. Cost pricing, supplier names, and batch-level data are protected by Row Level Security and never exposed to other facilities. The network only shares medicine name, available quantity (net of reserved), expiry date, and facility type.</div></div>
               <div className="d-faq-item"><div className="d-faq-q">What happens when a transfer is rejected or cancelled?</div><div className="d-faq-a">Any reserved stock (quantity_reserved) is immediately released back to available via the RPC. The requesting facility is notified by email and can search the network for alternative supply.</div></div>
