@@ -245,7 +245,7 @@ export default function InventoryPage() {
         </table>
       </div>
 
-      {addOpen  && <AddModal  facilityId={facilityId} medicines={medicines} suppliers={suppliers} currency={facility?.default_currency} onClose={() => setAddOpen(false)}  onSuccess={() => { setAddOpen(false);  load() }} />}
+      {addOpen  && <AddModal key={Date.now()} facilityId={facilityId} medicines={medicines} suppliers={suppliers} currency={facility?.default_currency} onClose={() => setAddOpen(false)}  onSuccess={() => { setAddOpen(false);  load() }} />}
       {adjItem  && <AdjModal  item={adjItem}  onClose={() => setAdjItem(null)}  onSuccess={() => { setAdjItem(null);  load() }} />}
       {editItem && <EditModal item={editItem} isAdmin={isAdmin} suppliers={suppliers} currency={facility?.default_currency} onClose={() => setEditItem(null)} onSuccess={() => { setEditItem(null); load() }} />}
     </div>
