@@ -11,6 +11,7 @@ export default function AdminPage() {
   const { profile, signOut } = useAuth()
   const navigate    = useNavigate()
   const [tab,       setTab]       = useState('facilities')
+  const [medicines, setMedicines] = useState([])
   const [facilities, setFacilities] = useState([])
   const [flagged,   setFlagged]   = useState([])
   const [disputes,  setDisputes]  = useState([])
@@ -29,8 +30,25 @@ export default function AdminPage() {
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadFacilities(), loadFlaggedInventory(), loadDisputes()])
+    await Promise.all([loadFacilities(), loadFlaggedInventory(), loadDisputes(), loadMedicines()])
     setLoading(false)
+  }
+
+  async function loadMedicines() {
+    const { data } = await supabase
+      .from('medicines')
+      .select('id, generic_name, strength, dosage_form, nafdac_reg_number, atc_code, essential_medicine, is_active')
+      .order('generic_name')
+    setMedicines(data ?? [])
+  }
+
+  async function updateNafdac(id, nafdac_reg_number) {
+    const { error } = await supabase
+      .from('medicines')
+      .update({ nafdac_reg_number })
+      .eq('id', id)
+    if (!error) { showToast('NAFDAC number updated'); await loadMedicines() }
+    else showToast('Failed: ' + error.message, 'error')
   }
 
   async function loadFacilities() {
@@ -132,10 +150,12 @@ export default function AdminPage() {
   const verified  = facilities.filter(f => f.is_verified)
   const suspended = facilities.filter(f => !f.is_active)
 
+  const missingNafdac = medicines.filter(m => !m.nafdac_reg_number && m.is_active).length
   const TABS = [
-    { key: 'facilities', label: 'Facilities', count: pending.length, alert: pending.length > 0 },
-    { key: 'inventory',  label: 'Flagged inventory', count: flagged.length, alert: flagged.length > 0 },
+    { key: 'facilities', label: 'Facilities',       count: pending.length,  alert: pending.length > 0 },
+    { key: 'inventory',  label: 'Flagged inventory', count: flagged.length,  alert: flagged.length > 0 },
     { key: 'disputes',   label: 'Transfer disputes', count: disputes.length, alert: disputes.length > 0 },
+    { key: 'medicines',  label: 'Medicine catalog',  count: missingNafdac,   alert: missingNafdac > 0 },
   ]
 
   if (!profile || profile.role !== 'system_admin') return null
@@ -398,8 +418,97 @@ export default function AdminPage() {
             )}
           </div>
         )}
+
+        {/* MEDICINES TAB */}
+        {tab === 'medicines' && (
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Add NAFDAC registration numbers to each medicine in the catalog. Facilities are shown the expected NAFDAC number when adding inventory — helping confirm the physical product matches the digital record.
+              </div>
+            </div>
+
+            {medicines.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', fontSize: 13 }}>Loading medicines…</div>
+            ) : (
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Medicine</th>
+                      <th>Strength / Form</th>
+                      <th>NAFDAC Reg Number</th>
+                      <th>ATC Code</th>
+                      <th>Essential</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {medicines.map(m => (
+                      <MedicineRow key={m.id} medicine={m} onUpdate={updateNafdac} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+function MedicineRow({ medicine: m, onUpdate }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal]         = useState(m.nafdac_reg_number ?? '')
+  const [saving, setSaving]   = useState(false)
+
+  async function save() {
+    setSaving(true)
+    await onUpdate(m.id, val.trim() || null)
+    setSaving(false)
+    setEditing(false)
+  }
+
+  return (
+    <tr>
+      <td className="td-primary">{m.generic_name}</td>
+      <td className="td-muted">{m.strength} · {m.dosage_form}</td>
+      <td>
+        {editing ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              placeholder="e.g. A4-0007"
+              style={{
+                background: 'var(--bg-surface)', border: '1px solid var(--primary)',
+                borderRadius: 'var(--r-sm)', color: 'var(--text-primary)',
+                padding: '4px 8px', fontSize: 12, fontFamily: 'var(--font-mono)',
+                width: 130, outline: 'none',
+              }}
+              onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+              autoFocus
+            />
+            <button className="btn btn-success btn-xs" onClick={save} disabled={saving}>{saving ? '…' : 'Save'}</button>
+            <button className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
+          </div>
+        ) : m.nafdac_reg_number ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--success)' }}>{m.nafdac_reg_number}</span>
+            <button className="btn btn-ghost btn-xs" onClick={() => { setVal(m.nafdac_reg_number); setEditing(true) }}>Edit</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: 'var(--warning)' }}>Not set</span>
+            <button className="btn btn-warning btn-xs" onClick={() => setEditing(true)}>Add</button>
+          </div>
+        )}
+      </td>
+      <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{m.atc_code || '—'}</span></td>
+      <td>{m.essential_medicine ? <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>✓ Essential</span> : <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>}</td>
+      <td><span style={{ fontSize: 11, color: m.is_active ? 'var(--success)' : 'var(--text-disabled)' }}>{m.is_active ? 'Active' : 'Inactive'}</span></td>
+    </tr>
   )
 }
 
