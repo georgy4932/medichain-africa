@@ -91,6 +91,7 @@ export default function StatusPage() {
           color: #f0f6ff;
           line-height: 1.6;
           min-height: 100vh;
+          overflow-y: auto;
         }
         .st::before {
           content: ''; position: fixed; inset: 0;
