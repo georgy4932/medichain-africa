@@ -414,9 +414,9 @@ export default function LandingPage() {
           <div className="lp-footer-links">
             <a href="/auth">Sign in</a>
             <a href="#">Docs</a>
-            <a href="#">Status</a>
+            <a href="/status">Status</a>
             <a href="mailto:hello@medichain.africa">hello@medichain.africa</a>
-            <a href="#">Privacy</a>
+            <a href="/privacy">Privacy</a>
           </div>
         </footer>
       </div>
