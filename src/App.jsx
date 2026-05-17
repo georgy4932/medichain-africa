@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
 import AdminPage     from './pages/Admin'
+import PrivacyPage   from './pages/Privacy'
+import StatusPage    from './pages/Status'
 import LandingPage    from './pages/Landing'
 import DocsPage       from './pages/Docs'
 import AuthPage       from './pages/Auth'
@@ -50,7 +52,9 @@ function AppRoutes() {
       <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
 
       {/* Public docs page — no auth required */}
-      <Route path="/docs" element={<DocsPage />} />
+      <Route path="/docs"    element={<DocsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/status"  element={<StatusPage />} />
 
       {/* Public landing page — no auth required */}
       <Route
