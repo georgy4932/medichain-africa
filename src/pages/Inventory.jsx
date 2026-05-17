@@ -255,7 +255,7 @@ export default function InventoryPage() {
 function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSuccess }) {
   const [f, setF] = useState({
     medicine_id: '', nafdac_number: '', batch_number: '', expiry_date: '', quantity: '', reorder_level: 10,
-    dispensing_unit: 'tablet', pack_size: 1, quantity_type: 'units',
+    dispensing_unit: 'tablet', pack_size: '', quantity_type: 'units',
     brand_name: '', supplier_id: '', manufacture_date: '', unit_cost: '', selling_price: '',
     storage_condition: 'room_temperature', storage_location: '', notes: '',
   })
@@ -358,7 +358,10 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                     />
                   </div>
                   <div style={{minWidth:110}}>
-                    <select value={f.quantity_type} onChange={e => set('quantity_type', e.target.value)}>
+                    <select value={f.quantity_type} onChange={e => {
+                      set('quantity_type', e.target.value)
+                      set('pack_size', '')
+                    }}>
                       <option value="units">Individual units</option>
                       <option value="packs">Packs</option>
                     </select>
@@ -404,7 +407,7 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                         Check the number of {f.dispensing_unit}s printed on the packaging
                       </div>
                     </div>
-                    {f.quantity && f.pack_size && f.pack_size !== '' && f.pack_size !== 'custom' && Number(f.pack_size) > 1 && (
+                    {f.quantity && f.pack_size && f.pack_size !== '' && f.pack_size !== 'custom' && Number(f.pack_size) > 0 && (
                       <div style={{paddingTop:20, fontSize:12, color:'var(--primary)', fontFamily:'var(--font-mono)', whiteSpace:'nowrap', fontWeight:600}}>
                         = {(Number(f.quantity) * Number(f.pack_size)).toLocaleString()} {f.dispensing_unit}s total
                       </div>
