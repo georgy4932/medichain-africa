@@ -389,9 +389,11 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                       })()}
                       {String(f.pack_size) === 'custom' && (
                         <input type="number" min={1}
-                          style={{marginTop:6}}
-                          placeholder="Enter pack size"
-                          onChange={e => set('pack_size', e.target.value === '' ? 'custom' : e.target.value)}
+                          style={{marginTop:6, width:'100%'}}
+                          placeholder="Enter pack size e.g. 28, 56, 84, 100"
+                          onBlur={e => { if (e.target.value) set('pack_size', e.target.value) }}
+                          onKeyDown={e => { if (e.key === 'Enter' && e.target.value) set('pack_size', e.target.value) }}
+                          autoFocus
                         />
                       )}
                       <div style={{fontSize:10,color:'var(--text-muted)',marginTop:3}}>
