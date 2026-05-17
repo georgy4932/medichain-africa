@@ -51,7 +51,7 @@ export default function InventoryPage() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    supabase.from('medicines').select('id, generic_name, dosage_form, strength').eq('is_active', true).order('generic_name')
+    supabase.from('medicines').select('id, generic_name, dosage_form, strength, nafdac_reg_number, atc_code').eq('is_active', true).order('generic_name')
       .then(({ data }) => setMedicines(data ?? []))
     if (facilityId)
       supabase.from('suppliers').select('id, name').eq('facility_id', facilityId)
@@ -62,7 +62,7 @@ export default function InventoryPage() {
     const u = i.quantity_available - i.quantity_reserved
     const days = daysUntilExpiry(i.expiry_date)
     const q = search.toLowerCase()
-    const matchSearch = !q || [i.medicines?.generic_name, i.brand_name, i.batch_number].some(v => v?.toLowerCase().includes(q))
+    const matchSearch = !q || [i.medicines?.generic_name, i.brand_name, i.batch_number, i.nafdac_number].some(v => v?.toLowerCase().includes(q))
     if (!matchSearch) return false
     if (filter === 'low')      return u > 0 && u < i.reorder_level
     if (filter === 'out')      return i.quantity_available === 0
@@ -246,7 +246,7 @@ export default function InventoryPage() {
 
 function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSuccess }) {
   const [f, setF] = useState({
-    medicine_id: '', batch_number: '', expiry_date: '', quantity: '', reorder_level: 10,
+    medicine_id: '', nafdac_number: '', batch_number: '', expiry_date: '', quantity: '', reorder_level: 10,
     brand_name: '', supplier_id: '', manufacture_date: '', unit_cost: '', selling_price: '',
     storage_condition: 'room_temperature', storage_location: '', notes: '',
   })
@@ -296,6 +296,34 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
                 <option value="">Select from catalog…</option>
                 {medicines.map(m => <option key={m.id} value={m.id}>{m.generic_name} — {m.strength} ({m.dosage_form})</option>)}
               </select>
+            </div>
+            {/* NAFDAC validation field */}
+            <div className="field">
+              <label>NAFDAC registration number</label>
+              <input
+                value={f.nafdac_number}
+                onChange={e => set('nafdac_number', e.target.value)}
+                placeholder="e.g. A4-0007"
+                style={{fontFamily:'var(--font-mono)', letterSpacing:'0.03em'}}
+              />
+              {(() => {
+                const selected = medicines.find(m => m.id === f.medicine_id)
+                if (!selected?.nafdac_reg_number) return (
+                  <div className="field-hint">Enter the NAFDAC number from the medicine packaging to verify product identity</div>
+                )
+                const entered = f.nafdac_number.trim().length > 0
+                const matches = f.nafdac_number.trim().toUpperCase() === selected.nafdac_reg_number.toUpperCase()
+                if (!entered) return (
+                  <div className="field-hint">
+                    Expected for {selected.generic_name}:{' '}
+                    <strong style={{color:'var(--text-primary)',fontFamily:'var(--font-mono)'}}>{selected.nafdac_reg_number}</strong>
+                    {' '}— enter this from the packaging to confirm product identity
+                  </div>
+                )
+                return matches
+                  ? <div style={{fontSize:11,color:'var(--success)',marginTop:3}}>✓ Matches catalog — product identity confirmed</div>
+                  : <div style={{fontSize:11,color:'var(--warning)',marginTop:3}}>⚠ Does not match the catalog number for {selected.generic_name}. Double-check the packaging.</div>
+              })()}
             </div>
             <div className="grid-2">
               <div className="field"><label>Batch number *</label><input required value={f.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="e.g. BT-2024-001" /></div>
