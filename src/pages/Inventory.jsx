@@ -202,6 +202,14 @@ export default function InventoryPage() {
                       title="Excludes stock reserved for pending transfers">
                       {fmtNumber(available)}
                     </span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 3 }}>
+                      {item.dispensing_unit ? `${item.dispensing_unit}s` : 'units'}
+                    </span>
+                    {item.pack_size > 1 && (
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
+                        {Math.floor(available / item.pack_size)} packs of {item.pack_size}
+                      </div>
+                    )}
                     {item.quantity_reserved > 0 && (
                       <div style={{ fontSize: 10, color: 'var(--warning)', marginTop: 1 }}>
                         {item.quantity_reserved} reserved for transfer
@@ -247,6 +255,7 @@ export default function InventoryPage() {
 function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSuccess }) {
   const [f, setF] = useState({
     medicine_id: '', nafdac_number: '', batch_number: '', expiry_date: '', quantity: '', reorder_level: 10,
+    dispensing_unit: 'tablet', pack_size: 1, quantity_type: 'units',
     brand_name: '', supplier_id: '', manufacture_date: '', unit_cost: '', selling_price: '',
     storage_condition: 'room_temperature', storage_location: '', notes: '',
   })
@@ -261,7 +270,11 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
       p_medicine_id:      f.medicine_id,
       p_batch_number:     f.batch_number,
       p_expiry_date:      f.expiry_date,
-      p_quantity:         Number(f.quantity),
+      p_quantity:         f.quantity_type === 'packs'
+                          ? Number(f.quantity) * Number(f.pack_size)
+                          : Number(f.quantity),
+      p_dispensing_unit:  f.dispensing_unit,
+      p_pack_size:        Number(f.pack_size),
       p_reorder_level:    Number(f.reorder_level),
       p_brand_name:       f.brand_name       || null,
       p_supplier_id:      f.supplier_id      || null,
@@ -337,7 +350,50 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
             <div className="grid-2">
               <div className="field">
                 <label>Initial quantity *</label>
-                <input type="number" required min={0} value={f.quantity} onChange={e => set('quantity', e.target.value)} />
+                <div style={{display:'flex', gap:8, alignItems:'flex-start', flexWrap:'wrap'}}>
+                  <div style={{flex:1, minWidth:80}}>
+                    <input type="number" required min={0} value={f.quantity}
+                      onChange={e => set('quantity', e.target.value)}
+                      style={{width:'100%'}}
+                    />
+                  </div>
+                  <div style={{minWidth:110}}>
+                    <select value={f.quantity_type} onChange={e => set('quantity_type', e.target.value)}>
+                      <option value="units">Individual units</option>
+                      <option value="packs">Packs</option>
+                    </select>
+                  </div>
+                </div>
+                {f.quantity_type === 'packs' && (
+                  <div style={{display:'flex', gap:8, alignItems:'center', marginTop:6}}>
+                    <div style={{flex:1}}>
+                      <label style={{fontSize:11,marginBottom:4,display:'block'}}>Pack size (units per pack)</label>
+                      <input type="number" min={1} value={f.pack_size}
+                        onChange={e => set('pack_size', e.target.value)}
+                        placeholder="e.g. 28"
+                      />
+                    </div>
+                    {f.quantity && f.pack_size && (
+                      <div style={{paddingTop:20, fontSize:12, color:'var(--primary)', fontFamily:'var(--font-mono)', whiteSpace:'nowrap', fontWeight:600}}>
+                        = {(Number(f.quantity) * Number(f.pack_size)).toLocaleString()} units total
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div style={{marginTop:6}}>
+                  <label style={{fontSize:11,marginBottom:4,display:'block'}}>Dispensing unit</label>
+                  <select value={f.dispensing_unit} onChange={e => set('dispensing_unit', e.target.value)}>
+                    <option value="tablet">Tablet</option>
+                    <option value="capsule">Capsule</option>
+                    <option value="vial">Vial</option>
+                    <option value="sachet">Sachet</option>
+                    <option value="bottle">Bottle</option>
+                    <option value="ampoule">Ampoule</option>
+                    <option value="tube">Tube</option>
+                    <option value="patch">Patch</option>
+                    <option value="unit">Unit</option>
+                  </select>
+                </div>
                 <div className="field-hint">Units received — published to availability network</div>
               </div>
               <div className="field">
