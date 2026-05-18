@@ -74,7 +74,7 @@ export default function PrivacyPage() {
         <nav className="pp-nav">
           <a href="/" className="pp-brand">
             <div className="pp-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg></div>
-            <span className="pp-name">MediChain Africa</span>
+            <span className="pp-name">Orela Nigeria</span>
             <span className="pp-tag">/ Privacy</span>
           </a>
           <a href="/" className="pp-back">
@@ -89,13 +89,13 @@ export default function PrivacyPage() {
           <div className="pp-updated">Last updated: {updated}</div>
 
           <div className="pp-intro">
-            MediChain Africa is medicine availability infrastructure for healthcare facilities. We handle sensitive operational data — medicine stock, facility details, transfer records — on behalf of the facilities that use our platform. This policy explains what we collect, how we use it, and how we protect it.
+            Orela Nigeria is medicine availability infrastructure for healthcare facilities. We handle sensitive operational data — medicine stock, facility details, transfer records — on behalf of the facilities that use our platform. This policy explains what we collect, how we use it, and how we protect it.
           </div>
 
           {/* 1 */}
           <div className="pp-section">
             <div className="pp-section-title"><span className="pp-section-num">01</span>Who we are</div>
-            <p className="pp-text">MediChain Africa operates the medicine availability network at medichain.africa. We are registered and operating in Nigeria. For privacy questions, contact us at <a href="mailto:hello@medichain.africa">hello@medichain.africa</a>.</p>
+            <p className="pp-text">Orela Nigeria operates the medicine availability network at orela.africa/ng. We are registered and operating in Nigeria. For privacy questions, contact us at <a href="mailto:hello@orela.africa">hello@orela.africa</a>.</p>
           </div>
 
           {/* 2 */}
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
           {/* 3 */}
           <div className="pp-section">
             <div className="pp-section-title"><span className="pp-section-num">03</span>What other facilities can see</div>
-            <p className="pp-text">This is the most important section for facilities to understand. MediChain is a network — some of your data is intentionally visible to other verified facilities. Here is exactly what is and is not shared:</p>
+            <p className="pp-text">This is the most important section for facilities to understand. Orela is a network — some of your data is intentionally visible to other verified facilities. Here is exactly what is and is not shared:</p>
             <div className="pp-list">
               <div className="pp-list-item"><strong style={{color:'#22c55e'}}>Visible to other verified facilities:</strong> Your facility name, type, city, state, and verification status. For each medicine you stock: the generic name, available quantity (net of reserved stock), earliest expiry date, and number of batches. This powers the medicine network search.</div>
               <div className="pp-list-item"><strong style={{color:'#ef4444'}}>Never visible to other facilities:</strong> Cost pricing, supplier names and details, batch numbers, reserved quantities, internal notes, staff records, contact information (until a transfer is mutually agreed), and any data marked as sensitive in your inventory.</div>
@@ -156,7 +156,7 @@ export default function PrivacyPage() {
           <div className="pp-section">
             <div className="pp-section-title"><span className="pp-section-num">06</span>Data retention</div>
             <p className="pp-text">We retain your facility and inventory data for as long as your facility is active on the network. If you deactivate your facility, your data is preserved in our systems but removed from all network-facing views. Transfer records and inventory movement logs are retained for audit purposes.</p>
-            <p className="pp-text">You may request deletion of your account and associated data by emailing <a href="mailto:hello@medichain.africa">hello@medichain.africa</a>. We will process deletion requests within 30 days.</p>
+            <p className="pp-text">You may request deletion of your account and associated data by emailing <a href="mailto:hello@orela.africa">hello@orela.africa</a>. We will process deletion requests within 30 days.</p>
           </div>
 
           {/* 7 */}
@@ -170,7 +170,7 @@ export default function PrivacyPage() {
               <div className="pp-list-item">Export your inventory and transfer records</div>
               <div className="pp-list-item">Deactivate your facility and remove it from network search at any time</div>
             </div>
-            <p className="pp-text">To exercise any of these rights, email <a href="mailto:hello@medichain.africa">hello@medichain.africa</a>.</p>
+            <p className="pp-text">To exercise any of these rights, email <a href="mailto:hello@orela.africa">hello@orela.africa</a>.</p>
           </div>
 
           {/* 8 */}
@@ -194,18 +194,18 @@ export default function PrivacyPage() {
           <div className="pp-contact">
             <div className="pp-contact-title">Questions about privacy?</div>
             <div className="pp-contact-text">We take data protection seriously. If you have any questions about how we handle your data, email us directly.</div>
-            <a href="mailto:hello@medichain.africa" style={{color:'#19c2b5',fontWeight:600,fontSize:14}}>hello@medichain.africa</a>
+            <a href="mailto:hello@orela.africa" style={{color:'#19c2b5',fontWeight:600,fontSize:14}}>hello@orela.africa</a>
           </div>
         </div>
 
         {/* Footer */}
         <footer className="pp-footer">
-          <div className="pp-footer-brand">MediChain Africa · Medicine availability infrastructure</div>
+          <div className="pp-footer-brand">Orela Nigeria · Medicine availability infrastructure</div>
           <div className="pp-footer-links">
             <a href="/">Home</a>
             <a href="/docs">Docs</a>
             <a href="/status">Status</a>
-            <a href="mailto:hello@medichain.africa">Contact</a>
+            <a href="mailto:hello@orela.africa">Contact</a>
           </div>
         </footer>
       </div>
