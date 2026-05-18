@@ -67,7 +67,7 @@ export default function OnboardingPage() {
                 <path d="M12 2v20M2 12h20"/>
               </svg>
             </div>
-            <span className="onboarding-brand-text">MediChain Africa</span>
+            <span className="onboarding-brand-text">Orela Nigeria</span>
           </div>
           <div className="onboarding-title">Set up your facility</div>
           <div className="onboarding-subtitle">
