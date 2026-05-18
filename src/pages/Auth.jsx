@@ -40,7 +40,7 @@ export default function AuthPage() {
               <path d="M12 2v20M2 12h20"/>
             </svg>
           </div>
-          <span className="auth-brand-name">MediChain</span>
+          <span className="auth-brand-name">Orela</span>
           <span className="auth-brand-tag">Africa Pharmacy Supply Intelligence</span>
         </div>
 
