@@ -126,7 +126,7 @@ export default function DashboardPage() {
               }
             </div>
             <div style={{fontSize:11, color:'var(--text-muted)', marginTop:6}}>
-              To expedite: email <a href="mailto:hello@medichain.africa" style={{color:'var(--warning)'}}>hello@medichain.africa</a> with your facility name and registration number.
+              To expedite: email <a href="mailto:hello@orela.africa" style={{color:'var(--warning)'}}>hello@orela.africa</a> with your facility name and registration number.
             </div>
           </div>
           <div style={{
