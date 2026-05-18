@@ -1,22 +1,7 @@
 {
-  "routes": [
-    {
-      "src": "^/$",
-      "dest": "/orela-landing.html"
-    },
-    {
-      "src": "^/ng(/.*)?$",
-      "dest": "/ng/$1"
-    },
-    {
-      "src": "^/ng$",
-      "dest": "/ng/index.html"
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/ng/:path*",
-      "destination": "/ng/index.html"
-    }
+    { "source": "/ng/(.*)", "destination": "/ng/index.html" },
+    { "source": "/ng", "destination": "/ng/index.html" },
+    { "source": "/", "destination": "/orela-landing.html" }
   ]
 }
