@@ -252,6 +252,123 @@ export default function InventoryPage() {
   )
 }
 
+function MedicineSearch({ medicines, value, onChange }) {
+  const [query,  setQuery]  = React.useState('')
+  const [open,   setOpen]   = React.useState(false)
+  const inputRef = React.useRef(null)
+
+  const selected = medicines.find(m => m.id === value)
+
+  const filtered = query.trim().length === 0
+    ? medicines
+    : medicines.filter(m =>
+        `${m.generic_name} ${m.strength} ${m.dosage_form}`.toLowerCase().includes(query.toLowerCase())
+      )
+
+  // Group by therapeutic class
+  const groups = filtered.reduce((acc, m) => {
+    const cls = m.therapeutic_class || 'Other'
+    if (!acc[cls]) acc[cls] = []
+    acc[cls].push(m)
+    return acc
+  }, {})
+
+  function select(id) {
+    onChange(id)
+    setQuery('')
+    setOpen(false)
+  }
+
+  function handleFocus() {
+    setOpen(true)
+    if (selected) setQuery('')
+  }
+
+  function handleBlur(e) {
+    // Delay so click on option registers first
+    setTimeout(() => setOpen(false), 180)
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Input shows selected medicine or search query */}
+      <input
+        ref={inputRef}
+        type="text"
+        required={!value}
+        placeholder="Type to search medicines…"
+        value={open ? query : selected ? `${selected.generic_name} — ${selected.strength} (${selected.dosage_form})` : query}
+        onChange={e => { setQuery(e.target.value); setOpen(true) }}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        style={{ width: '100%' }}
+        autoComplete="off"
+      />
+      {/* Hidden input for form validation */}
+      <input type="hidden" required value={value} />
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--r-md)',
+          boxShadow: 'var(--shadow)',
+          zIndex: 999,
+          maxHeight: 280,
+          overflowY: 'auto',
+          marginTop: 4,
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text-muted)' }}>
+              No medicines found for "{query}"
+            </div>
+          ) : (
+            Object.entries(groups).sort().map(([cls, meds]) => (
+              <div key={cls}>
+                <div style={{
+                  padding: '6px 12px',
+                  fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                  letterSpacing: '0.1em', color: 'var(--text-muted)',
+                  background: 'var(--bg-primary)',
+                  position: 'sticky', top: 0,
+                }}>
+                  {cls}
+                </div>
+                {meds.map(m => (
+                  <div
+                    key={m.id}
+                    onMouseDown={() => select(m.id)}
+                    style={{
+                      padding: '9px 14px',
+                      fontSize: 12.5,
+                      color: m.id === value ? 'var(--primary)' : 'var(--text-primary)',
+                      background: m.id === value ? 'var(--teal-dim)' : 'transparent',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--border-soft)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-active)'}
+                    onMouseLeave={e => e.currentTarget.style.background = m.id === value ? 'var(--teal-dim)' : 'transparent'}
+                  >
+                    <span style={{ fontWeight: m.id === value ? 600 : 400 }}>
+                      {m.generic_name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {m.strength} · {m.dosage_form}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSuccess }) {
   const [f, setF] = useState({
     medicine_id: '', nafdac_number: '', batch_number: '', expiry_date: '', quantity: '', reorder_level: 10,
@@ -305,10 +422,11 @@ function AddModal({ facilityId, medicines, suppliers, currency, onClose, onSucce
           <div className="form-section" style={{ marginTop: 12 }}>
             <div className="field">
               <label>Medicine *</label>
-              <select required value={f.medicine_id} onChange={e => set('medicine_id', e.target.value)}>
-                <option value="">Select from catalog…</option>
-                {medicines.map(m => <option key={m.id} value={m.id}>{m.generic_name} — {m.strength} ({m.dosage_form})</option>)}
-              </select>
+              <MedicineSearch
+                medicines={medicines}
+                value={f.medicine_id}
+                onChange={id => setF(p => ({ ...p, medicine_id: id, nafdac_number: '', pack_size: '', quantity_type: 'units' }))}
+              />
             </div>
             {/* NAFDAC validation field */}
             <div className="field">
