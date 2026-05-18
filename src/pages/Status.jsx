@@ -124,7 +124,7 @@ export default function StatusPage() {
         <nav className="st-nav">
           <a href="/" className="st-brand">
             <div className="st-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg></div>
-            <span className="st-name">MediChain Africa</span>
+            <span className="st-name">Orela Nigeria</span>
             <span className="st-tag">/ Status</span>
           </a>
           <a href="/" className="st-back">
@@ -169,7 +169,7 @@ export default function StatusPage() {
               </div>
               <div style={{ fontSize: 12, color: '#8bb4d4' }}>
                 {checked
-                  ? `Last checked ${checked.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · medichain.africa`
+                  ? `Last checked ${checked.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · orela.africa/ng`
                   : 'Checking now…'}
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function StatusPage() {
               <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f6ff', marginBottom: 2 }}>Experiencing an issue?</div>
               <div style={{ fontSize: 12, color: '#4a6d8c' }}>Contact us if you're seeing problems not reflected here.</div>
             </div>
-            <a href="mailto:hello@medichain.africa" style={{
+            <a href="mailto:hello@orela.africa" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '8px 16px', background: '#19c2b5', color: '#050f1a',
               fontSize: 13, fontWeight: 600, borderRadius: 5,
@@ -277,12 +277,12 @@ export default function StatusPage() {
         </div>
 
         <footer className="st-footer">
-          <div className="st-footer-brand">MediChain Africa · Medicine availability infrastructure</div>
+          <div className="st-footer-brand">Orela Nigeria · Medicine availability infrastructure</div>
           <div className="st-footer-links">
             <a href="/">Home</a>
             <a href="/docs">Docs</a>
             <a href="/privacy">Privacy</a>
-            <a href="mailto:hello@medichain.africa">Contact</a>
+            <a href="mailto:hello@orela.africa">Contact</a>
           </div>
         </footer>
       </div>
