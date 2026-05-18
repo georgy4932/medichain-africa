@@ -208,17 +208,17 @@ export default function LandingPage() {
               <div className="lp-nav-logo">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
               </div>
-              <span className="lp-nav-name">MediChain Africa</span>
+              <span className="lp-nav-name">Orela Nigeria</span>
             </a>
             <ul className="lp-nav-links">
               <li><a href="#how">Product</a></li>
               <li><a href="#network">Facilities</a></li>
-              <li><a href="/docs">Docs</a></li>
+              <li><a href="/ng/docs">Docs</a></li>
             </ul>
           </div>
           <div className="lp-nav-right">
-            <a href="/auth" className="lp-nav-signin">Sign in</a>
-            <a href="/auth" className="lp-nav-cta">Join the network →</a>
+            <a href="/ng/auth" className="lp-nav-signin">Sign in</a>
+            <a href="/ng/auth" className="lp-nav-cta">Join the network →</a>
           </div>
         </nav>
 
@@ -234,10 +234,10 @@ export default function LandingPage() {
               Move stock <em>before</em><br/>patients are affected.
             </h1>
             <p className="lp-hero-sub">
-              MediChain Africa connects pharmacies, clinics, hospitals, and distributors into a real-time medicine availability network — so stockouts can be prevented, not just discovered.
+              Orela Nigeria connects pharmacies, clinics, hospitals, and distributors into a real-time medicine availability network — so stockouts can be prevented, not just discovered.
             </p>
             <div className="lp-hero-actions">
-              <a href="/auth" className="lp-btn-primary">
+              <a href="/ng/auth" className="lp-btn-primary">
                 Register your facility
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </a>
@@ -338,7 +338,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="lp-cmd">
-                <div className="lp-cmd-bar"><div className="lp-cmd-dot" style={{background:'#ef4444'}}></div><div className="lp-cmd-dot" style={{background:'#f5a524'}}></div><div className="lp-cmd-dot" style={{background:'#22c55e'}}></div><span className="lp-cmd-url">medichain.africa · Command Center</span></div>
+                <div className="lp-cmd-bar"><div className="lp-cmd-dot" style={{background:'#ef4444'}}></div><div className="lp-cmd-dot" style={{background:'#f5a524'}}></div><div className="lp-cmd-dot" style={{background:'#22c55e'}}></div><span className="lp-cmd-url">orela.africa/ng · Command Center</span></div>
                 <div className="lp-cmd-body">
                   <div className="lp-cmd-eyebrow">Supply Network · Command Center</div>
                   <div className="lp-cmd-title">Lagos Region Overview</div>
@@ -385,7 +385,7 @@ export default function LandingPage() {
         <section className="lp-trust">
           <div className="lp-trust-inner">
             <div className="lp-trust-quote">"The local health ecosystem should know where trusted medicine supply exists and be able to move it before stockouts hurt patients."</div>
-            <div className="lp-trust-attr">The MediChain Africa thesis</div>
+            <div className="lp-trust-attr">The Orela Nigeria thesis</div>
             <div className="lp-trust-items">
               <div className="lp-trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>Secure infrastructure</div>
               <div className="lp-trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>Data segregated between facilities</div>
@@ -399,8 +399,8 @@ export default function LandingPage() {
         <section className="lp-cta">
           <h2 className="lp-cta-headline">Join the network.<br/><em>Before the next stockout.</em></h2>
           <p className="lp-cta-sub">Register your facility in minutes. Add your inventory. Become part of Africa's medicine availability network.</p>
-          <a href="/auth" className="lp-btn-primary" style={{fontSize:'15px',padding:'12px 30px'}}>Register your facility →</a>
-          <p className="lp-cta-note">Free during beta · No credit card required · medichain.africa</p>
+          <a href="/ng/auth" className="lp-btn-primary" style={{fontSize:'15px',padding:'12px 30px'}}>Register your facility →</a>
+          <p className="lp-cta-note">Free during beta · No credit card required · orela.africa/ng</p>
         </section>
 
         {/* FOOTER */}
@@ -409,14 +409,14 @@ export default function LandingPage() {
             <div className="lp-nav-logo" style={{width:'20px',height:'20px'}}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{width:'10px',height:'10px',color:'#050f1a'}}><path d="M12 2v20M2 12h20"/></svg>
             </div>
-            MediChain Africa · Medicine availability infrastructure
+            Orela Nigeria · Medicine availability infrastructure
           </div>
           <div className="lp-footer-links">
-            <a href="/auth">Sign in</a>
+            <a href="/ng/auth">Sign in</a>
             <a href="#">Docs</a>
-            <a href="/status">Status</a>
-            <a href="mailto:hello@medichain.africa">hello@medichain.africa</a>
-            <a href="/privacy">Privacy</a>
+            <a href="/ng/status">Status</a>
+            <a href="mailto:hello@orela.africa">hello@orela.africa</a>
+            <a href="/ng/privacy">Privacy</a>
           </div>
         </footer>
       </div>
