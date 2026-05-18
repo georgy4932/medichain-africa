@@ -40,7 +40,7 @@ export default function AppShell() {
     <>
       {/* Brand */}
       <div className="sidebar-brand">
-        <div className="sidebar-product-eyebrow">MediChain Africa</div>
+        <div className="sidebar-product-eyebrow">Orela Nigeria</div>
         <div className="sidebar-product-name">Supply Network</div>
         <div className="sidebar-product-desc">Medicine availability infrastructure</div>
       </div>
@@ -101,7 +101,7 @@ export default function AppShell() {
           <HamburgerIcon />
         </button>
         <div className="mobile-topbar-brand">
-          <div className="sidebar-product-eyebrow" style={{ marginBottom: 0 }}>MediChain</div>
+          <div className="sidebar-product-eyebrow" style={{ marginBottom: 0 }}>Orela</div>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1 }}>
             {facility?.name ?? 'Supply Network'}
           </div>
