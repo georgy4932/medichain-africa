@@ -253,9 +253,9 @@ export default function InventoryPage() {
 }
 
 function MedicineSearch({ medicines, value, onChange }) {
-  const [query,  setQuery]  = React.useState('')
-  const [open,   setOpen]   = React.useState(false)
-  const inputRef = React.useRef(null)
+  const [query,  setQuery]  = useState('')
+  const [open,   setOpen]   = useState(false)
+  const inputRef = useRef(null)
 
   const selected = medicines.find(m => m.id === value)
 
