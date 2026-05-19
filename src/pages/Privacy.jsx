@@ -72,12 +72,12 @@ export default function PrivacyPage() {
       <div className="pp">
         {/* Nav */}
         <nav className="pp-nav">
-          <a href="/" className="pp-brand">
+          <a href="/ng" className="pp-brand">
             <div className="pp-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg></div>
             <span className="pp-name">Orela Nigeria</span>
             <span className="pp-tag">/ Privacy</span>
           </a>
-          <a href="/" className="pp-back">
+          <a href="/ng" className="pp-back">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
             Back to site
           </a>
@@ -202,9 +202,9 @@ export default function PrivacyPage() {
         <footer className="pp-footer">
           <div className="pp-footer-brand">Orela Nigeria · Medicine availability infrastructure</div>
           <div className="pp-footer-links">
-            <a href="/">Home</a>
-            <a href="/docs">Docs</a>
-            <a href="/status">Status</a>
+            <a href="/ng">Home</a>
+            <a href="/ng/docs">Docs</a>
+            <a href="/ng/status">Status</a>
             <a href="mailto:hello@orela.africa">Contact</a>
           </div>
         </footer>
