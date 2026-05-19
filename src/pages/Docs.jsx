@@ -155,13 +155,13 @@ export default function DocsPage() {
       <div className="d">
         {/* NAV */}
         <nav className="d-nav">
-          <a href="/" className="d-brand">
+          <a href="/ng" className="d-brand">
             <div className="d-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg></div>
             <span className="d-brand-name">Orela Nigeria</span>
             <span className="d-brand-tag">/ Docs</span>
           </a>
           <div className="d-nav-right">
-            <a href="/" className="d-back">
+            <a href="/ng" className="d-back">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
               Back to site
             </a>
