@@ -278,6 +278,7 @@ export default function StatusPage() {
 
         <footer className="st-footer">
           <div className="st-footer-brand">Orela Nigeria · Medicine availability infrastructure</div>
+          <div style={{fontSize:11,color:'#1e3a52',marginBottom:6}}>© 2026 Orela Network. All rights reserved.</div>
           <div className="st-footer-links">
             <a href="/ng">Home</a>
             <a href="/ng/docs">Docs</a>
