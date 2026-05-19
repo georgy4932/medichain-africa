@@ -201,6 +201,7 @@ export default function PrivacyPage() {
         {/* Footer */}
         <footer className="pp-footer">
           <div className="pp-footer-brand">Orela Nigeria · Medicine availability infrastructure</div>
+          <div style={{fontSize:11,color:'#1e3a52',marginBottom:6}}>© 2026 Orela Network. All rights reserved.</div>
           <div className="pp-footer-links">
             <a href="/ng">Home</a>
             <a href="/ng/docs">Docs</a>
