@@ -11,6 +11,8 @@ export default function AdminPage() {
   const { profile, signOut } = useAuth()
   const navigate    = useNavigate()
   const [tab,       setTab]       = useState('facilities')
+  const [alerts,    setAlerts]    = useState([])
+  const [alertForm, setAlertForm] = useState(false)
   const [medicines, setMedicines] = useState([])
   const [facilities, setFacilities] = useState([])
   const [flagged,   setFlagged]   = useState([])
@@ -30,7 +32,7 @@ export default function AdminPage() {
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadFacilities(), loadFlaggedInventory(), loadDisputes(), loadMedicines()])
+    await Promise.all([loadFacilities(), loadFlaggedInventory(), loadDisputes(), loadMedicines(), loadAlerts()])
     setLoading(false)
   }
 
@@ -49,6 +51,14 @@ export default function AdminPage() {
       .eq('id', id)
     if (!error) { showToast('NAFDAC number updated'); await loadMedicines() }
     else showToast('Failed: ' + error.message, 'error')
+  }
+
+  async function loadAlerts() {
+    const { data } = await supabase
+      .from('batch_alerts')
+      .select('*, medicines(generic_name)')
+      .order('created_at', { ascending: false })
+    setAlerts(data ?? [])
   }
 
   async function loadFacilities() {
@@ -156,6 +166,7 @@ export default function AdminPage() {
     { key: 'inventory',  label: 'Flagged inventory', count: flagged.length,  alert: flagged.length > 0 },
     { key: 'disputes',   label: 'Transfer disputes', count: disputes.length, alert: disputes.length > 0 },
     { key: 'medicines',  label: 'Medicine catalog',  count: missingNafdac,   alert: missingNafdac > 0 },
+    { key: 'alerts',     label: 'Batch alerts',       count: alerts.filter(a => a.status === 'active').length, alert: alerts.some(a => a.severity === 'critical' && a.status === 'active') },
   ]
 
   if (!profile || profile.role !== 'system_admin') return null
@@ -454,6 +465,236 @@ export default function AdminPage() {
             )}
           </div>
         )}
+
+        {/* BATCH ALERTS TAB */}
+        {tab === 'alerts' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 520 }}>
+                Publish batch alerts to the network. Affected inventory is automatically suppressed from network search pending facility confirmation.
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => setAlertForm(true)}>
+                + Publish alert
+              </button>
+            </div>
+
+            {alertForm && (
+              <AlertForm
+                medicines={medicines}
+                onClose={() => setAlertForm(false)}
+                onSuccess={() => { setAlertForm(false); loadAlerts() }}
+              />
+            )}
+
+            {alerts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', fontSize: 13 }}>
+                No alerts published yet
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {alerts.map(alert => (
+                  <AlertCard key={alert.id} alert={alert} onResolve={async (id) => {
+                    await supabase.from('batch_alerts').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', id)
+                    loadAlerts()
+                  }} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AlertCard({ alert: a, onResolve }) {
+  const sevColor = { critical: 'var(--danger)', urgent: 'var(--warning)', routine: 'var(--primary)' }[a.severity] ?? 'var(--text-muted)'
+  const sevBg    = { critical: 'rgba(220,38,38,0.08)', urgent: 'rgba(234,179,8,0.08)', routine: 'rgba(25,194,181,0.08)' }[a.severity] ?? ''
+
+  return (
+    <div style={{ background: 'var(--bg-surface)', border: `1px solid var(--border)`, borderLeft: `3px solid ${sevColor}`, borderRadius: 'var(--r-lg)', padding: '16px 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: sevColor, background: sevBg, padding: '2px 7px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
+              {a.severity}
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {a.alert_type?.replace(/_/g, ' ')}
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-disabled)' }}>
+              {a.alert_reference}
+            </span>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{a.title}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+            {a.medicines?.generic_name ?? a.medicine_name_raw} · {a.source} · {a.issuing_authority}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            Batches: {a.batch_numbers?.join(', ')}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 6 }}>{a.description}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>Action: <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{a.recommended_action}</span></div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 4,
+            background: a.status === 'active' ? 'rgba(220,38,38,0.1)' : 'rgba(34,197,94,0.1)',
+            color: a.status === 'active' ? 'var(--danger)' : 'var(--success)',
+          }}>{a.status}</span>
+          {a.status === 'active' && (
+            <button className="btn btn-ghost btn-xs" onClick={() => onResolve(a.id)}>Mark resolved</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AlertForm({ medicines, onClose, onSuccess }) {
+  const [f, setF] = useState({
+    alert_reference: '', title: '', medicine_id: '', medicine_name_raw: '',
+    batch_numbers: '', manufacturer: '', alert_type: 'recall', severity: 'urgent',
+    source: 'NAFDAC', issuing_authority: 'NAFDAC', description: '',
+    recommended_action: '', risk_to_patients: '', public_visible: true,
+  })
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState(null)
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+
+  async function submit() {
+    if (!f.alert_reference || !f.title || !f.batch_numbers || !f.description || !f.recommended_action) {
+      setError('Please fill in all required fields'); return
+    }
+    setLoading(true); setError(null)
+    const batches = f.batch_numbers.split(',').map(b => b.trim()).filter(Boolean)
+    const { data, error: err } = await supabase.rpc('publish_batch_alert', {
+      p_alert_reference:    f.alert_reference,
+      p_title:              f.title,
+      p_medicine_id:        f.medicine_id || null,
+      p_medicine_name_raw:  f.medicine_name_raw || null,
+      p_batch_numbers:      batches,
+      p_manufacturer:       f.manufacturer || null,
+      p_alert_type:         f.alert_type,
+      p_severity:           f.severity,
+      p_source:             f.source,
+      p_issuing_authority:  f.issuing_authority || null,
+      p_description:        f.description,
+      p_recommended_action: f.recommended_action,
+      p_risk_to_patients:   f.risk_to_patients || null,
+      p_expires_at:         null,
+      p_public_visible:     f.public_visible,
+    })
+    setLoading(false)
+    if (err) { setError(err.message); return }
+    onSuccess(data)
+  }
+
+  const row = { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }
+  const lbl = { fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }
+
+  return (
+    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '20px 24px', marginBottom: 24 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18, color: 'var(--text-primary)' }}>Publish batch alert</div>
+
+      {error && <div style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 6, padding: '10px 14px', fontSize: 12, color: 'var(--danger)', marginBottom: 14 }}>{error}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+        <div style={row}>
+          <label style={lbl}>Alert reference *</label>
+          <input value={f.alert_reference} onChange={e => set('alert_reference', e.target.value)} placeholder="NAFDAC-2026-001" />
+        </div>
+        <div style={row}>
+          <label style={lbl}>Severity *</label>
+          <select value={f.severity} onChange={e => set('severity', e.target.value)}>
+            <option value="critical">Critical</option>
+            <option value="urgent">Urgent</option>
+            <option value="routine">Routine</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={row}>
+        <label style={lbl}>Alert title *</label>
+        <input value={f.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Urgent recall — Amoxicillin 500mg counterfeit batch" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+        <div style={row}>
+          <label style={lbl}>Alert type *</label>
+          <select value={f.alert_type} onChange={e => set('alert_type', e.target.value)}>
+            <option value="recall">Recall</option>
+            <option value="quality_defect">Quality defect</option>
+            <option value="counterfeit">Counterfeit / Falsified</option>
+            <option value="safety_signal">Safety signal</option>
+            <option value="expiry_correction">Expiry correction</option>
+            <option value="falsified">Falsified medicine</option>
+          </select>
+        </div>
+        <div style={row}>
+          <label style={lbl}>Source *</label>
+          <select value={f.source} onChange={e => set('source', e.target.value)}>
+            <option value="NAFDAC">NAFDAC</option>
+            <option value="WHO">WHO</option>
+            <option value="Manufacturer">Manufacturer</option>
+            <option value="Orela">Orela</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+        <div style={row}>
+          <label style={lbl}>Medicine (from catalog)</label>
+          <select value={f.medicine_id} onChange={e => set('medicine_id', e.target.value)}>
+            <option value="">— Select if in catalog —</option>
+            {medicines.map(m => <option key={m.id} value={m.id}>{m.generic_name} {m.strength}</option>)}
+          </select>
+        </div>
+        <div style={row}>
+          <label style={lbl}>Or enter medicine name</label>
+          <input value={f.medicine_name_raw} onChange={e => set('medicine_name_raw', e.target.value)} placeholder="e.g. Amoxicillin 500mg capsule" />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+        <div style={row}>
+          <label style={lbl}>Batch numbers * <span style={{ fontSize: 10, fontWeight: 400 }}>(comma separated)</span></label>
+          <input value={f.batch_numbers} onChange={e => set('batch_numbers', e.target.value)} placeholder="e.g. BT-2024-001, BT-2024-002" />
+        </div>
+        <div style={row}>
+          <label style={lbl}>Manufacturer</label>
+          <input value={f.manufacturer} onChange={e => set('manufacturer', e.target.value)} placeholder="e.g. Fidson Healthcare Plc" />
+        </div>
+      </div>
+
+      <div style={row}>
+        <label style={lbl}>Description *</label>
+        <textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Describe the nature of the defect or risk..." style={{ resize: 'vertical' }} />
+      </div>
+
+      <div style={row}>
+        <label style={lbl}>Recommended action *</label>
+        <textarea rows={2} value={f.recommended_action} onChange={e => set('recommended_action', e.target.value)} placeholder="e.g. Immediately quarantine all affected stock. Do not dispense. Contact NAFDAC on 0800-NAFDAC." style={{ resize: 'vertical' }} />
+      </div>
+
+      <div style={row}>
+        <label style={lbl}>Risk to patients</label>
+        <input value={f.risk_to_patients} onChange={e => set('risk_to_patients', e.target.value)} placeholder="e.g. Subpotent product may lead to treatment failure" />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <input type="checkbox" id="pub_vis" checked={f.public_visible} onChange={e => set('public_visible', e.target.checked)} />
+        <label htmlFor="pub_vis" style={{ fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          Publish to public alert page (orela.africa/ng/alerts)
+        </label>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button className="btn btn-primary btn-sm" onClick={submit} disabled={loading}>
+          {loading ? 'Publishing...' : 'Publish alert'}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
       </div>
     </div>
   )
