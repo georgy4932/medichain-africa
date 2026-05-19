@@ -405,6 +405,7 @@ export default function LandingPage() {
 
         {/* FOOTER */}
         <footer className="lp-footer">
+          <div style={{fontSize:11,color:'#1e3a52',width:'100%',marginBottom:4}}>© 2026 Orela Network. All rights reserved.</div>
           <div className="lp-footer-brand">
             <div className="lp-nav-logo" style={{width:'20px',height:'20px'}}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{width:'10px',height:'10px',color:'#050f1a'}}><path d="M12 2v20M2 12h20"/></svg>
