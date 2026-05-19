@@ -57,7 +57,7 @@ function AppRoutes() {
       <Route path="/docs"    element={<DocsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/status"          element={<StatusPage />} />
-      <Route path="/alerts"          element={<MedicineAlertsPage />} />
+      <Route path="/medicine-alerts" element={<MedicineAlertsPage />} />
 
       {/* Public landing page — no auth required */}
       <Route
@@ -109,7 +109,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"  element={<DashboardPage />} />
         <Route path="inventory"  element={<InventoryPage />} />
-        <Route path="safety-alerts" element={<AlertsPage />} />
+        <Route path="alerts"        element={<AlertsPage />} />
         <Route path="drug-alerts"    element={<DrugAlertsPage />} />
         <Route path="search"     element={<SearchPage />} />
         <Route path="transfers"  element={<TransfersPage />} />
@@ -122,7 +122,7 @@ function AppRoutes() {
       <Route element={<RequireAuth><RequireFacility><AppShell /></RequireFacility></RequireAuth>}>
         <Route path="dashboard"  element={<DashboardPage />} />
         <Route path="inventory"  element={<InventoryPage />} />
-        <Route path="safety-alerts" element={<AlertsPage />} />
+        <Route path="alerts"        element={<AlertsPage />} />
         <Route path="drug-alerts"    element={<DrugAlertsPage />} />
         <Route path="search"     element={<SearchPage />} />
         <Route path="transfers"  element={<TransfersPage />} />
