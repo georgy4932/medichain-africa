@@ -125,7 +125,11 @@ export default function DrugAlertsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🛡️</div>
+          <div className="empty-state-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
           <div className="empty-state-title">
             {filter === 'pending' ? 'No pending alerts' : 'No alerts found'}
           </div>
@@ -207,7 +211,7 @@ export default function DrugAlertsPage() {
                           )}
                           {r.network_suppressed && r.response_status === 'pending' && (
                             <div style={{ color: '#dc2626', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span>⚠</span> Hidden from network search
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Hidden from network search
                             </div>
                           )}
                         </div>
@@ -233,8 +237,8 @@ export default function DrugAlertsPage() {
 
                       {/* Risk to patients */}
                       {a?.risk_to_patients && (
-                        <div style={{ fontSize: 11, color: '#dc2626', marginBottom: 4 }}>
-                          ⚠ Risk: {a.risk_to_patients}
+                        <div style={{ fontSize: 11, color: '#dc2626', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Risk: {a.risk_to_patients}
                         </div>
                       )}
                     </div>
@@ -264,7 +268,7 @@ export default function DrugAlertsPage() {
                         disabled={!!acting}
                         style={{ fontSize: 12 }}
                       >
-                        {acting === r.id + 'quarantined' ? 'Confirming...' : '🔒 Quarantine stock'}
+                        {acting === r.id + 'quarantined' ? 'Confirming...' : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 5, verticalAlign: 'middle'}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Quarantine stock</>}
                       </button>
                       <button
                         className="btn btn-ghost btn-sm"
