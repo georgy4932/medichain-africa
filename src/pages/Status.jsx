@@ -122,12 +122,12 @@ export default function StatusPage() {
 
       <div className="st">
         <nav className="st-nav">
-          <a href="/" className="st-brand">
+          <a href="/ng" className="st-brand">
             <div className="st-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg></div>
             <span className="st-name">Orela Nigeria</span>
             <span className="st-tag">/ Status</span>
           </a>
-          <a href="/" className="st-back">
+          <a href="/ng" className="st-back">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
             Back to site
           </a>
@@ -279,9 +279,9 @@ export default function StatusPage() {
         <footer className="st-footer">
           <div className="st-footer-brand">Orela Nigeria · Medicine availability infrastructure</div>
           <div className="st-footer-links">
-            <a href="/">Home</a>
-            <a href="/docs">Docs</a>
-            <a href="/privacy">Privacy</a>
+            <a href="/ng">Home</a>
+            <a href="/ng/docs">Docs</a>
+            <a href="/ng/privacy">Privacy</a>
             <a href="mailto:hello@orela.africa">Contact</a>
           </div>
         </footer>
