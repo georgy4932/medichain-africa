@@ -1,253 +1,203 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { useFacility } from '../hooks/useFacility'
-import { fmtDate, fmtRelative, alertTypeLabel, alertTypeClass } from '../utils/formatters'
-import { Badge, EmptyState, SpinnerCenter } from '../components/shared'
-import UnverifiedGate from '../components/shared/UnverifiedGate'
 
-const FILTER_TABS = [
-  { key: 'active',       label: 'Active' },
-  { key: 'acknowledged', label: 'Acknowledged' },
-  { key: 'resolved',     label: 'Resolved' },
-  { key: 'all',          label: 'All' },
-]
-
-const RECOMMENDED_ACTIONS = {
-  out_of_stock:  'Search for this medicine at nearby facilities and create a transfer request.',
-  low_stock:     'Review consumption rate and place a procurement order or request a transfer.',
-  near_expiry:   'Consider running a promotion, transferring surplus to another facility, or planning disposal.',
-  overstock:     'Review storage conditions and consider offering surplus to other facilities.',
+const SEV_COLOR = { critical: '#dc2626', urgent: '#d97706', routine: '#19c2b5' }
+const SEV_BG    = { critical: 'rgba(220,38,38,0.08)', urgent: 'rgba(217,119,6,0.08)', routine: 'rgba(25,194,181,0.08)' }
+const TYPE_LABEL = {
+  recall: 'Recall', quality_defect: 'Quality Defect', counterfeit: 'Counterfeit',
+  safety_signal: 'Safety Signal', expiry_correction: 'Expiry Correction', falsified: 'Falsified Medicine',
 }
 
 export default function AlertsPage() {
-  const { facilityId, facility } = useFacility()
+  const [alerts,   setAlerts]   = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [search,   setSearch]   = useState('')
+  const [filter,   setFilter]   = useState('all')
+  const [expanded, setExpanded] = useState(null)
 
-  if (facility && !facility.is_verified) {
-    return <UnverifiedGate page="Shortage Alerts" reason="Alert monitoring is available once your facility is verified and active on the network." />
-  }
-  const [alerts,  setAlerts]  = useState([])
-  const [filter,  setFilter]  = useState('active')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => { if (facilityId) load() }, [facilityId, filter])
-
-  async function load() {
-    setLoading(true)
-    let q = supabase
-      .from('stock_alerts')
-      .select('*, medicines(generic_name, strength, dosage_form), inventory_items(batch_number, expiry_date, quantity_available, reorder_level)')
-      .eq('facility_id', facilityId)
-      .order('created_at', { ascending: false })
-    if (filter !== 'all') q = q.eq('status', filter)
-    const { data } = await q
-    setAlerts(data ?? [])
-    setLoading(false)
-  }
-
-  async function updateStatus(id, status) {
-    const patch = { status }
-    if (status === 'acknowledged') patch.acknowledged_at = new Date().toISOString()
-    if (status === 'resolved')     patch.resolved_at     = new Date().toISOString()
-    await supabase.from('stock_alerts').update(patch).eq('id', id)
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('batch_alerts')
+        .select('*, medicines(generic_name, strength, dosage_form)')
+        .eq('public_visible', true)
+        .neq('status', 'resolved')
+        .order('issued_at', { ascending: false })
+      setAlerts(data ?? [])
+      setLoading(false)
+    }
     load()
+  }, [])
+
+  const filtered = alerts.filter(a => {
+    const q = search.toLowerCase()
+    const matchSearch = !q ||
+      a.title?.toLowerCase().includes(q) ||
+      a.medicine_name_raw?.toLowerCase().includes(q) ||
+      a.medicines?.generic_name?.toLowerCase().includes(q) ||
+      a.batch_numbers?.some(b => b.toLowerCase().includes(q)) ||
+      a.manufacturer?.toLowerCase().includes(q) ||
+      a.alert_reference?.toLowerCase().includes(q)
+    const matchFilter = filter === 'all' || a.severity === filter
+    return matchSearch && matchFilter
+  })
+
+  function medicineName(a) {
+    if (a.medicines) return `${a.medicines.generic_name} ${a.medicines.strength ?? ''} ${a.medicines.dosage_form ?? ''}`.trim()
+    return a.medicine_name_raw ?? '—'
   }
-
-  // Group active alerts by severity
-  const critical  = alerts.filter(a => a.alert_type === 'out_of_stock')
-  const warnings  = alerts.filter(a => a.alert_type === 'low_stock')
-  const expiring  = alerts.filter(a => a.alert_type === 'near_expiry')
-  const other     = alerts.filter(a => !['out_of_stock','low_stock','near_expiry'].includes(a.alert_type))
-
-  const totalActive = alerts.filter(a => a.status === 'active').length
 
   return (
-    <div>
-      <div className="page-top">
-        <div>
-          <div className="page-eyebrow">STOCK ALERTS</div>
-          <div className="page-title">Stock Alerts</div>
-          <div className="page-subtitle">
-            {totalActive > 0
-              ? `${totalActive} active alert${totalActive !== 1 ? 's' : ''} require attention`
-              : 'All stock levels are healthy'}
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', fontFamily: 'var(--font-sans)' }}>
+
+      {/* Header */}
+      <div style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', padding: '0 32px' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, gap: 16 }}>
+            <a href="/ng" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
+              <div style={{ width: 26, height: 26, background: '#19c2b5', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#04080f" strokeWidth="2.5" width={12} height={12}>
+                  <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                  <path d="M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+                </svg>
+              </div>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Orela Nigeria</span>
+            </a>
+            <a href="/ng/auth" style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>Sign in →</a>
           </div>
         </div>
-        <div className="page-actions">
-          <div className="filter-chips">
-            {FILTER_TABS.map(t => (
-              <button key={t.key} className={`chip ${filter === t.key ? 'active' : ''}`} onClick={() => setFilter(t.key)}>
-                {t.label}
-              </button>
+      </div>
+
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px 64px' }}>
+
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: '#19c2b5', marginBottom: 8 }}>
+            Drug Safety · Pharmacovigilance
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: 8 }}>
+            Medicine Safety Alerts
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.65, maxWidth: 540 }}>
+            Active alerts for recalled, substandard, falsified, or otherwise unsafe medicines in the Orela network. Issued in coordination with NAFDAC and other regulatory authorities.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by medicine, batch number, manufacturer..."
+            style={{ flex: 1, minWidth: 220 }} />
+          <select value={filter} onChange={e => setFilter(e.target.value)} style={{ minWidth: 140 }}>
+            <option value="all">All severities</option>
+            <option value="critical">Critical only</option>
+            <option value="urgent">Urgent only</option>
+            <option value="routine">Routine only</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+          {['critical','urgent','routine'].map(s => (
+            <div key={s} style={{ padding: '8px 14px', borderRadius: 8, background: SEV_BG[s], border: `1px solid ${SEV_COLOR[s]}30`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: SEV_COLOR[s] }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: SEV_COLOR[s], textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{alerts.filter(a => a.severity === s).length}</span>
+            </div>
+          ))}
+          <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-disabled)', alignSelf: 'center', fontFamily: 'var(--font-mono)' }}>
+            {filtered.length} alert{filtered.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', fontSize: 13 }}>Loading alerts...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '56px 24px' }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
+              {search ? `No alerts found for "${search}"` : 'No active alerts at this time'}
+            </div>
+            {!search && <div style={{ fontSize: 12, color: 'var(--text-disabled)' }}>This is a good sign — the medicine supply network is clear.</div>}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {filtered.map(a => {
+              const isOpen   = expanded === a.id
+              const sevColor = SEV_COLOR[a.severity] ?? '#19c2b5'
+              const sevBg    = SEV_BG[a.severity]    ?? 'transparent'
+              return (
+                <div key={a.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderLeft: `4px solid ${sevColor}`, borderRadius: 10, overflow: 'hidden' }}>
+                  <div onClick={() => setExpanded(isOpen ? null : a.id)} style={{ padding: '16px 20px', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', background: sevBg, color: sevColor, border: `1px solid ${sevColor}40`, padding: '2px 7px', borderRadius: 3 }}>{a.severity}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', background: 'var(--bg-primary)', border: '1px solid var(--border)', padding: '2px 7px', borderRadius: 3 }}>{TYPE_LABEL[a.alert_type] ?? a.alert_type}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-disabled)', padding: '2px 4px' }}>{a.alert_reference}</span>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, lineHeight: 1.3 }}>{a.title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          <span>💊 {medicineName(a)}</span>
+                          {a.manufacturer && <span>🏭 {a.manufacturer}</span>}
+                          <span>📋 {a.issuing_authority ?? a.source}</span>
+                          <span>📅 {new Date(a.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 4, textTransform: 'uppercase', background: a.status === 'active' ? 'rgba(220,38,38,0.1)' : 'rgba(34,197,94,0.1)', color: a.status === 'active' ? '#dc2626' : '#22c55e' }}>{a.status}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{isOpen ? '▲ Less' : '▼ Details'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--border)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-disabled)', marginBottom: 6 }}>Affected batch numbers</div>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {a.batch_numbers?.map(b => (
+                              <span key={b} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, background: 'var(--bg-primary)', border: '1px solid var(--border)', padding: '3px 8px', borderRadius: 4, color: 'var(--text-primary)' }}>{b}</span>
+                            ))}
+                          </div>
+                        </div>
+                        {a.risk_to_patients && (
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-disabled)', marginBottom: 6 }}>Risk to patients</div>
+                            <div style={{ fontSize: 12, color: '#dc2626', lineHeight: 1.5 }}>{a.risk_to_patients}</div>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-disabled)', marginBottom: 6 }}>Description</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 }}>{a.description}</div>
+                      </div>
+                      <div style={{ background: sevBg, border: `1px solid ${sevColor}30`, borderRadius: 8, padding: '12px 16px', marginBottom: 14 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: sevColor, marginBottom: 6 }}>Recommended action</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6, fontWeight: 500 }}>{a.recommended_action}</div>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-disabled)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                        <span>Source: {a.source}</span>
+                        <span>Ref: {a.alert_reference}</span>
+                        {a.expires_at && <span>Expires: {new Date(a.expires_at).toLocaleDateString('en-GB')}</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <div style={{ marginTop: 40, padding: '16px 20px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.65 }}>
+          <strong style={{ color: 'var(--text-secondary)' }}>About this page:</strong> Orela publishes medicine safety alerts in coordination with NAFDAC and international regulatory bodies. Alerts reflect information received at time of publication and may be updated as investigations progress. For urgent enquiries contact{' '}
+          <a href="mailto:hello@orela.africa" style={{ color: '#19c2b5' }}>hello@orela.africa</a> or NAFDAC directly.
+        </div>
+
+        <div style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-disabled)' }}>© 2026 Orela Network. All rights reserved.</div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {[['Home', '/ng'], ['Docs', '/ng/docs'], ['Privacy', '/ng/privacy'], ['Status', '/ng/status']].map(([label, href]) => (
+              <a key={href} href={href} style={{ fontSize: 11, color: 'var(--text-muted)', textDecoration: 'none' }}>{label}</a>
             ))}
           </div>
         </div>
-      </div>
-
-      {loading ? <SpinnerCenter /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {alerts.length === 0 && (
-            <EmptyState
-              title={filter === 'active' ? 'No active alerts' : `No ${filter} alerts`}
-              description={filter === 'active'
-                ? 'All monitored stock is within healthy thresholds.'
-                : 'No alerts found with this status.'}
-            />
-          )}
-
-          {/* CRITICAL — Out of stock */}
-          {critical.length > 0 && (
-            <AlertGroup
-              title="Critical — Out of Stock"
-              accentColor="var(--danger)"
-              alerts={critical}
-              onAction={updateStatus}
-            />
-          )}
-
-          {/* WARNING — Low stock */}
-          {warnings.length > 0 && (
-            <AlertGroup
-              title="Warning — Low Stock"
-              accentColor="var(--warning)"
-              alerts={warnings}
-              onAction={updateStatus}
-            />
-          )}
-
-          {/* EXPIRY RISK */}
-          {expiring.length > 0 && (
-            <AlertGroup
-              title="Expiry Risk"
-              accentColor="var(--warning)"
-              alerts={expiring}
-              onAction={updateStatus}
-            />
-          )}
-
-          {/* OTHER */}
-          {other.length > 0 && (
-            <AlertGroup
-              title="Other Alerts"
-              accentColor="var(--info)"
-              alerts={other}
-              onAction={updateStatus}
-            />
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function AlertGroup({ title, accentColor, alerts, onAction }) {
-  return (
-    <div className="section-shell">
-      <div className="section-shell-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: accentColor, flexShrink: 0 }} />
-          <span className="section-shell-title">{title}</span>
-          <span style={{
-            background: 'var(--bg-surface)', border: '1px solid var(--border)',
-            borderRadius: 99, padding: '1px 7px', fontSize: 10, color: 'var(--text-muted)', fontWeight: 600,
-          }}>
-            {alerts.length}
-          </span>
-        </div>
-      </div>
-      <div style={{ borderLeft: `2px solid ${accentColor}` }}>
-        {alerts.map(a => (
-          <AlertRow key={a.id} alert={a} onAction={onAction} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function AlertRow({ alert: a, onAction }) {
-  const rec = RECOMMENDED_ACTIONS[a.alert_type]
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 14,
-      padding: '14px 18px',
-      borderBottom: '1px solid var(--border-soft)',
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-          <Badge className={alertTypeClass(a.alert_type)} dot>
-            {alertTypeLabel(a.alert_type)}
-          </Badge>
-          {a.status !== 'active' && (
-            <Badge className="badge-neutral">{a.status}</Badge>
-          )}
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-            {fmtRelative(a.created_at)}
-          </span>
-        </div>
-
-        {/* Medicine */}
-        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>
-          {a.medicines?.generic_name}
-          {a.medicines?.strength && (
-            <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
-              {a.medicines.strength}
-            </span>
-          )}
-        </div>
-
-        {/* Alert message */}
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{a.message}</div>
-
-        {/* Stock details */}
-        {a.inventory_items && (
-          <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, flexWrap: 'wrap' }}>
-            {a.inventory_items.batch_number && (
-              <span>Batch: <span className="mono">{a.inventory_items.batch_number}</span></span>
-            )}
-            {a.inventory_items.quantity_available != null && (
-              <span>Qty: <strong style={{ color: 'var(--text-secondary)' }}>{a.inventory_items.quantity_available}</strong></span>
-            )}
-            {a.inventory_items.expiry_date && (
-              <span>Expiry: {fmtDate(a.inventory_items.expiry_date)}</span>
-            )}
-          </div>
-        )}
-
-        {/* Recommended action */}
-        {rec && a.status === 'active' && (
-          <div style={{
-            fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-primary)',
-            border: '1px solid var(--border-soft)', borderRadius: 'var(--r-sm)',
-            padding: '6px 10px', lineHeight: 1.5,
-          }}>
-            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Recommended: </span>
-            {rec}
-          </div>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 6, flex: 'shrink-0', alignItems: 'center', marginTop: 2 }}>
-        {a.status === 'active' && (
-          <>
-            <button className="btn btn-ghost btn-xs" onClick={() => onAction(a.id, 'acknowledged')}>
-              Acknowledge
-            </button>
-            <button className="btn btn-success btn-xs" onClick={() => onAction(a.id, 'resolved')}>
-              Resolve
-            </button>
-          </>
-        )}
-        {a.status === 'acknowledged' && (
-          <button className="btn btn-success btn-xs" onClick={() => onAction(a.id, 'resolved')}>
-            Resolve
-          </button>
-        )}
-        {a.status === 'resolved' && (
-          <span style={{ fontSize: 11, color: 'var(--success)' }}>✓ Resolved</span>
-        )}
       </div>
     </div>
   )
