@@ -14,13 +14,17 @@ const STATUS_LABEL = {
 }
 
 export default function DrugAlertsPage() {
-  const { facilityId } = useAuth()
+  const { facility } = useAuth()
+  const facilityId = facility?.id
   const [responses, setResponses] = useState([])
   const [loading,   setLoading]   = useState(true)
   const [filter,    setFilter]    = useState('pending')
   const [acting,    setActing]    = useState(null)
 
-  useEffect(() => { if (facilityId) load() }, [facilityId])
+  useEffect(() => {
+    if (facilityId) load()
+    else setLoading(false)
+  }, [facilityId])
 
   async function load() {
     setLoading(true)
@@ -96,9 +100,9 @@ export default function DrugAlertsPage() {
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { key: 'pending',    label: 'Action required' },
+          { key: 'pending',     label: 'Action required' },
           { key: 'quarantined', label: 'Quarantined' },
-          { key: 'all',        label: 'All alerts' },
+          { key: 'all',         label: 'All alerts' },
         ].map(f => (
           <button
             key={f.key}
