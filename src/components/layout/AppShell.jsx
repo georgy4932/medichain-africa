@@ -10,7 +10,7 @@ export default function AppShell() {
   const navigate                          = useNavigate()
   const location                          = useLocation()
   const [alertCount,       setAlertCount]       = useState(0)
-  const [batchAlertCount,  setBatchAlertCount]  = useState(0)
+
   const [transferCount, setTransferCount] = useState(0)
   const [mobileOpen,    setMobileOpen]    = useState(false)
 
@@ -18,12 +18,6 @@ export default function AppShell() {
 
   useEffect(() => {
     if (!facilityId) return
-    supabase.from('alert_facility_responses')
-      .select('id', { count: 'exact', head: true })
-      .eq('facility_id', facilityId)
-      .eq('response_status', 'pending')
-      .then(({ count }) => setBatchAlertCount(count ?? 0))
-
     supabase.from('stock_alerts')
       .select('id', { count: 'exact', head: true })
       .eq('facility_id', facilityId).eq('status', 'active')
@@ -72,8 +66,8 @@ export default function AppShell() {
           <span className="nav-group-label">Command Center</span>
           <NavItem to="/dashboard" label="Overview"          icon={<DashIcon />} />
           <NavItem to="/search"    label="Medicine Network"  icon={<NetworkIcon />} />
-          <NavItem to="/safety-alerts" label="Shortage Alerts"   icon={<BellIcon />} badge={alertCount} badgeWarning />
-          <NavItem to="/drug-alerts"    label="Drug Safety Alerts" icon={<ShieldIcon />} badge={batchAlertCount} badgeWarning />
+          <NavItem to="/alerts"        label="Shortage Alerts"   icon={<BellIcon />} badge={alertCount} badgeWarning />
+          <NavItem to="/drug-alerts"    label="Drug Safety Alerts" icon={<ShieldIcon />} />
           <NavItem to="/transfers" label="Redistribution"    icon={<ArrowsIcon />} badge={transferCount} />
         </div>
         <div className="nav-group">
