@@ -21,7 +21,7 @@ export default function AlertsPage() {
       .from('stock_alerts')
       .select('*, inventory_items(batch_number, expiry_date, quantity_available, medicines(generic_name, strength, dosage_form))')
       .eq('facility_id', facilityId)
-      .eq('is_active', true)
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
     setAlerts(data ?? [])
     setLoading(false)
