@@ -1,7 +1,7 @@
 {
-  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/ng/:path*", "destination": "/ng/index.html" },
-    { "source": "/ng", "destination": "/ng/index.html" }
+    { "source": "/ng", "destination": "/ng/index.html" },
+    { "source": "/", "destination": "/orela-landing.html" }
   ]
 }
