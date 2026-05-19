@@ -206,7 +206,7 @@ export default function LandingPage() {
           <div className="lp-nav-left">
             <a href="/ng" className="lp-nav-brand">
               <div className="lp-nav-logo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
               </div>
               <span className="lp-nav-name">Orela Nigeria</span>
             </a>
@@ -408,7 +408,7 @@ export default function LandingPage() {
           <div style={{fontSize:11,color:'#1e3a52',width:'100%',marginBottom:4}}>© 2026 Orela Network. All rights reserved.</div>
           <div className="lp-footer-brand">
             <div className="lp-nav-logo" style={{width:'20px',height:'20px'}}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{width:'10px',height:'10px',color:'#050f1a'}}><path d="M12 2v20M2 12h20"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{width:'10px',height:'10px',color:'#050f1a'}}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
             </div>
             Orela Nigeria · Medicine availability infrastructure
           </div>
