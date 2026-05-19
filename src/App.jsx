@@ -42,6 +42,14 @@ function RequireFacility({ children }) {
   return children
 }
 
+function RequireAdmin({ children }) {
+  const { profile, loading } = useAuth()
+  if (loading) return <GlobalSpinner />
+  if (!profile) return <Navigate to="/auth" replace />
+  if (profile.role !== 'system_admin') return <Navigate to="/dashboard" replace />
+  return children
+}
+
 function AppRoutes() {
   const { session, facility, profile, loading } = useAuth()
   if (loading) return <GlobalSpinner />
@@ -51,7 +59,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Admin panel — system_admin only */}
-      <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+      <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
 
       {/* Public docs page — no auth required */}
       <Route path="/docs"    element={<DocsPage />} />
@@ -95,28 +103,6 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-
-      <Route
-        path="/app"
-        element={
-          <RequireAuth>
-            <RequireFacility>
-              <AppShell />
-            </RequireFacility>
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard"  element={<DashboardPage />} />
-        <Route path="inventory"  element={<InventoryPage />} />
-        <Route path="alerts"        element={<AlertsPage />} />
-        <Route path="drug-alerts"    element={<DrugAlertsPage />} />
-        <Route path="search"     element={<SearchPage />} />
-        <Route path="transfers"  element={<TransfersPage />} />
-        <Route path="staff"      element={<StaffPage />} />
-        <Route path="analytics"  element={<AnalyticsPage />} />
-        <Route path="settings"   element={<SettingsPage />} />
-      </Route>
 
       {/* Top-level app routes with auth + facility guard */}
       <Route element={<RequireAuth><RequireFacility><AppShell /></RequireFacility></RequireAuth>}>

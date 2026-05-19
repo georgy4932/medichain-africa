@@ -21,14 +21,9 @@ export default function AdminPage() {
   const [acting,    setActing]    = useState(null)
   const [toast,     setToast]     = useState(null)
 
-  // Guard — only system_admin can access
   useEffect(() => {
-    if (profile && profile.role !== 'system_admin') {
-      navigate('/dashboard', { replace: true })
-    }
-  }, [profile, navigate])
-
-  useEffect(() => { loadAll() }, [])
+    if (profile?.role === 'system_admin') loadAll()
+  }, [profile])
 
   async function loadAll() {
     setLoading(true)
