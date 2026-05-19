@@ -2,7 +2,7 @@
 // Privacy policy — public, no auth required
 
 export default function PrivacyPage() {
-  const updated = 'May 17, 2025'
+  const updated = 'May 17, 2026'
 
   return (
     <>
