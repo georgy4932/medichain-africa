@@ -37,7 +37,7 @@ export default function AuthPage() {
         <div className="auth-brand">
           <div className="auth-brand-icon-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="#07111f" strokeWidth="2.5" style={{width:22,height:22}}>
-              <path d="M12 2v20M2 12h20"/>
+              <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
             </svg>
           </div>
           <span className="auth-brand-name">Orela</span>
