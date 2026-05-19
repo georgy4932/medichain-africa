@@ -204,7 +204,7 @@ export default function LandingPage() {
         {/* NAV */}
         <nav className="lp-nav">
           <div className="lp-nav-left">
-            <a href="/" className="lp-nav-brand">
+            <a href="/ng" className="lp-nav-brand">
               <div className="lp-nav-logo">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
               </div>
