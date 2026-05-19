@@ -4,12 +4,16 @@ import { useAuth }             from '../hooks/useAuth'
 import { alertTypeLabel, alertTypeClass, alertDotClass, fmtDate } from '../utils/formatters'
 
 export default function AlertsPage() {
-  const { facilityId } = useAuth()
+  const { facility } = useAuth()
+  const facilityId = facility?.id
   const [alerts,  setAlerts]  = useState([])
   const [loading, setLoading] = useState(true)
   const [filter,  setFilter]  = useState('all')
 
-  useEffect(() => { if (facilityId) load() }, [facilityId])
+  useEffect(() => {
+    if (facilityId) load()
+    else setLoading(false)
+  }, [facilityId])
 
   async function load() {
     setLoading(true)
