@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orela — Medicine Availability Network</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -50,12 +51,12 @@
     .nav-name{font-size:17px;font-weight:700;color:var(--text-1);letter-spacing:-.03em}
     .nav-tag{font-family:var(--mono);font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.14em;color:var(--teal);background:var(--teal-dim);border:1px solid rgba(25,194,181,.2);padding:3px 8px;border-radius:3px}
 
-    /* MAIN — fixed, scrollable, clears nav and status bar */
+    /* MAIN */
     main{
       position:fixed;
       top:var(--nav-h);
       left:0;right:0;
-      bottom:40px; /* height of status bar */
+      bottom:40px;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -82,8 +83,6 @@
     .cn{fill:rgba(25,194,181,.18)!important;stroke:#19c2b5!important;stroke-width:1.2!important;cursor:pointer;animation:nglow 3s ease-in-out infinite}
     @keyframes nglow{0%,100%{fill:rgba(25,194,181,.16);filter:drop-shadow(0 0 6px rgba(25,194,181,.4))}50%{fill:rgba(25,194,181,.30);filter:drop-shadow(0 0 16px rgba(25,194,181,.65))}}
     .cn:hover{fill:rgba(25,194,181,.40)!important}
-
-
 
     /* LEGEND */
     .legend{display:flex;align-items:center;gap:20px;margin-top:16px;justify-content:center;flex-shrink:0;animation:fadeUp 1s ease .3s both}
@@ -124,7 +123,6 @@
 
   <div class="map-wrap" id="mw">
     <svg id="msv"></svg>
-
   </div>
 
   <div class="legend">
@@ -145,11 +143,8 @@ const AFRICA_ISO=new Set(["DZA","AGO","BEN","BWA","BFA","BDI","CMR","CPV","CAF",
 async function build(){
   const wrap=document.getElementById('mw');
   const W=wrap.clientWidth||400;
-
-  // Calculate available height: viewport minus nav, status bar, headline, legend, padding
-  const availH=window.innerHeight-54-40; // nav + status bar
-  const H=Math.min(W*1.28, availH*0.72); // leave room for headline + legend
-
+  const availH=window.innerHeight-54-40;
+  const H=Math.min(W*1.28, availH*0.72);
   const svg=d3.select('#msv').attr('width',W).attr('height',H).attr('viewBox',`0 0 ${W} ${H}`);
 
   const SOURCES=[
