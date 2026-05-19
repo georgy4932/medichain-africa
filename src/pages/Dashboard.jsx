@@ -229,7 +229,7 @@ export default function DashboardPage() {
         <div className="section-shell">
           <div className="section-shell-header">
             <span className="section-shell-title">Shortage Alerts</span>
-            <Link to="/alerts" className="btn btn-xs btn-ghost">View all</Link>
+            <Link to="/safety-alerts" className="btn btn-xs btn-ghost">View all</Link>
           </div>
           {alerts.length === 0 ? (
             <div style={{ padding: '24px 18px', textAlign: 'center' }}>
@@ -307,7 +307,7 @@ export default function DashboardPage() {
           accent="var(--purple)"
         />
         <ActionCard
-          to="/alerts"
+          to="/safety-alerts"
           icon="⚡"
           title="Monitor shortage signals"
           desc="Track emerging stock risks at your facility. Act before stockouts affect patient care."
