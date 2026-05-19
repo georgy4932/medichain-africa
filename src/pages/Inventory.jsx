@@ -25,7 +25,7 @@ const FILTER_OPTIONS = [
 ]
 
 export default function InventoryPage() {
-  const { facilityId, facility, isAdmin } = useFacility()
+  const { facilityId, facility, isFacilityAdmin: isAdmin } = useFacility()
   const [items,     setItems]     = useState([])
   const [medicines, setMedicines] = useState([])
   const [suppliers, setSuppliers] = useState([])

@@ -12,7 +12,7 @@ const ROLE_META = {
 }
 
 export default function StaffPage() {
-  const { facilityId, isAdmin } = useFacility()
+  const { facilityId, isFacilityAdmin: isAdmin } = useFacility()
   const { profile: currentUser } = useAuth()
   const [staff,    setStaff]    = useState([])
   const [loading,  setLoading]  = useState(true)

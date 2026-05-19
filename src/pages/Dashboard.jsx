@@ -10,7 +10,8 @@ import {
 import { Badge } from '../components/shared'
 
 export default function DashboardPage() {
-  const { facility, facilityId, expiryThreshold } = useFacility()
+  const { facility, facilityId } = useFacility()
+  const expiryThreshold = facility?.near_expiry_threshold_days ?? 90
   const [stats,     setStats]     = useState(null)
   const [alerts,    setAlerts]    = useState([])
   const [batchAlerts, setBatchAlerts] = useState([])

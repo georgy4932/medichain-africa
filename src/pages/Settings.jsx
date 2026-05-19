@@ -16,8 +16,8 @@ const FACILITY_TYPES = [
 const CURRENCIES = ['NGN','GHS','KES','ZAR','UGX','TZS','ETB','USD']
 
 export default function SettingsPage() {
-  const { facility, facilityId, isAdmin, refreshFacility } = useAuth()
-  const { profile } = useAuth()
+  const { facility, refreshFacility, profile } = useAuth()
+  const { facilityId, isFacilityAdmin: isAdmin } = useFacility()
 
   const [facTab,  setFacTab]  = useState('profile')
   const [saving,  setSaving]  = useState(false)
