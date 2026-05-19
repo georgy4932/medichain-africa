@@ -2,7 +2,7 @@
 // Privacy policy — public, no auth required
 
 export default function PrivacyPage() {
-  const updated = 'May 17, 2025'
+  const updated = 'May 17, 2026'
 
   return (
     <>
@@ -206,7 +206,7 @@ export default function PrivacyPage() {
             <a href="/ng">Home</a>
             <a href="/ng/docs">Docs</a>
             <a href="/ng/status">Status</a>
-            <a href="/ng/alerts">Drug Alerts</a>
+            <a href="/ng/medicine-alerts">Drug Safety Alerts</a>
             <a href="mailto:hello@orela.africa">Contact</a>
           </div>
         </footer>
