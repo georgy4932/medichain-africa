@@ -214,6 +214,7 @@ export default function LandingPage() {
               <li><a href="#how">Product</a></li>
               <li><a href="#network">Facilities</a></li>
               <li><a href="/ng/docs">Docs</a></li>
+              <li><a href="/ng/medicine-alerts">Drug Alerts</a></li>
             </ul>
           </div>
           <div className="lp-nav-right">
@@ -414,10 +415,11 @@ export default function LandingPage() {
           </div>
           <div className="lp-footer-links">
             <a href="/ng/auth">Sign in</a>
-            <a href="#">Docs</a>
+            <a href="/ng/docs">Docs</a>
+            <a href="/ng/medicine-alerts">Drug Safety Alerts</a>
             <a href="/ng/status">Status</a>
-            <a href="mailto:hello@orela.africa">hello@orela.africa</a>
             <a href="/ng/privacy">Privacy</a>
+            <a href="mailto:hello@orela.africa">hello@orela.africa</a>
           </div>
         </footer>
       </div>
