@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const { facility, facilityId, expiryThreshold } = useFacility()
   const [stats,     setStats]     = useState(null)
   const [alerts,    setAlerts]    = useState([])
+  const [batchAlerts, setBatchAlerts] = useState([])
   const [transfers, setTransfers] = useState([])
   const [movements, setMovements] = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -21,7 +22,7 @@ export default function DashboardPage() {
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadStats(), loadAlerts(), loadTransfers(), loadMovements()])
+    await Promise.all([loadStats(), loadAlerts(), loadBatchAlerts(), loadTransfers(), loadMovements()])
     setLoading(false)
   }
 
@@ -44,6 +45,17 @@ export default function DashboardPage() {
       nearExpiry:  nearExpiry.length,
       redistributable: nearExpiry.filter(i => u(i) > 0).length,
     })
+  }
+
+  async function loadBatchAlerts() {
+    if (!facilityId) return
+    const { data } = await supabase
+      .from('alert_facility_responses')
+      .select('*, batch_alerts(title, severity, alert_type, alert_reference, description, recommended_action, batch_numbers, source, issuing_authority)')
+      .eq('facility_id', facilityId)
+      .eq('response_status', 'pending')
+      .order('created_at', { ascending: false })
+    setBatchAlerts(data ?? [])
   }
 
   async function loadAlerts() {
@@ -187,6 +199,31 @@ export default function DashboardPage() {
 
       {/* Two column */}
       <div className="grid-2" style={{ marginBottom: 16 }}>
+
+        {/* BATCH ALERTS — critical regulatory alerts from NAFDAC */}
+        {batchAlerts.length > 0 && (
+          <div style={{
+            background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.3)',
+            borderLeft: '4px solid #dc2626', borderRadius: 'var(--r-lg)',
+            padding: '16px 20px', marginBottom: 16,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', flexShrink: 0, animation: 'pulse 1.5s infinite' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', letterSpacing: '-0.01em' }}>
+                {batchAlerts.length} active medicine safety alert{batchAlerts.length > 1 ? 's' : ''} — action required
+              </span>
+            </div>
+            {batchAlerts.map(r => (
+              <BatchAlertRow key={r.id} response={r} onRespond={async (id, status) => {
+                await supabase.rpc('respond_to_alert', { p_response_id: id, p_status: status })
+                loadBatchAlerts()
+              }} />
+            ))}
+            <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(220,38,38,0.7)' }}>
+              Affected stock has been removed from network search pending your confirmation.
+            </div>
+          </div>
+        )}
 
         {/* Shortage alerts */}
         <div className="section-shell">
@@ -343,5 +380,78 @@ function ActionCard({ to, icon, title, desc, cta, accent }) {
         <div style={{ fontSize: 11.5, fontWeight: 600, color: accent, marginTop: 4 }}>{cta} →</div>
       </div>
     </Link>
+  )
+}
+
+function BatchAlertRow({ response: r, onRespond }) {
+  const a = r.batch_alerts
+  const [acting, setActing] = useState(null)
+  const sevColor = { critical: '#dc2626', urgent: '#d97706', routine: '#19c2b5' }[a?.severity] ?? '#dc2626'
+
+  async function respond(status) {
+    setActing(status)
+    await onRespond(r.id, status)
+    setActing(null)
+  }
+
+  return (
+    <div style={{
+      background: 'var(--bg-surface)', border: '1px solid rgba(220,38,38,0.2)',
+      borderRadius: 'var(--r-md)', padding: '12px 14px', marginBottom: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: sevColor, background: `${sevColor}15`, padding: '2px 6px', borderRadius: 3 }}>
+              {a?.severity}
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
+              {a?.alert_reference}
+            </span>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{a?.title}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+            Matched batch: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontWeight: 600 }}>{r.matched_batch_number}</span>
+            {r.units_at_time_of_alert && <span> · {r.units_at_time_of_alert} units at time of alert</span>}
+          </div>
+          <div style={{ fontSize: 11, color: '#dc2626', lineHeight: 1.5 }}>{a?.recommended_action}</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-danger btn-xs"
+          onClick={() => respond('quarantined')}
+          disabled={!!acting}
+          style={{ fontSize: 11 }}
+        >
+          {acting === 'quarantined' ? 'Confirming...' : '🔒 Quarantine stock'}
+        </button>
+        <button
+          className="btn btn-ghost btn-xs"
+          onClick={() => respond('not_affected')}
+          disabled={!!acting}
+          style={{ fontSize: 11 }}
+        >
+          {acting === 'not_affected' ? '...' : '✓ Not in our stock'}
+        </button>
+        <button
+          className="btn btn-ghost btn-xs"
+          onClick={() => respond('already_dispensed')}
+          disabled={!!acting}
+          style={{ fontSize: 11 }}
+        >
+          {acting === 'already_dispensed' ? '...' : '↗ Already dispensed'}
+        </button>
+        <button
+          className="btn btn-ghost btn-xs"
+          onClick={() => respond('returned_removed')}
+          disabled={!!acting}
+          style={{ fontSize: 11 }}
+        >
+          {acting === 'returned_removed' ? '...' : '↩ Returned/removed'}
+        </button>
+      </div>
+    </div>
   )
 }
