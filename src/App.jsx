@@ -11,7 +11,9 @@ import OnboardingPage from './pages/Onboarding'
 import AppShell       from './components/layout/AppShell'
 import DashboardPage  from './pages/Dashboard'
 import InventoryPage  from './pages/Inventory'
-import AlertsPage     from './pages/Alerts'
+import AlertsPage          from './pages/Alerts'
+import DrugAlertsPage      from './pages/DrugAlerts'
+import MedicineAlertsPage from './pages/MedicineAlerts'
 import SearchPage     from './pages/Search'
 import TransfersPage  from './pages/Transfers'
 import StaffPage      from './pages/Staff'
@@ -54,7 +56,8 @@ function AppRoutes() {
       {/* Public docs page — no auth required */}
       <Route path="/docs"    element={<DocsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/status"  element={<StatusPage />} />
+      <Route path="/status"          element={<StatusPage />} />
+      <Route path="/alerts"          element={<MedicineAlertsPage />} />
 
       {/* Public landing page — no auth required */}
       <Route
@@ -106,7 +109,8 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"  element={<DashboardPage />} />
         <Route path="inventory"  element={<InventoryPage />} />
-        <Route path="alerts"     element={<AlertsPage />} />
+        <Route path="safety-alerts" element={<AlertsPage />} />
+        <Route path="drug-alerts"    element={<DrugAlertsPage />} />
         <Route path="search"     element={<SearchPage />} />
         <Route path="transfers"  element={<TransfersPage />} />
         <Route path="staff"      element={<StaffPage />} />
@@ -118,7 +122,8 @@ function AppRoutes() {
       <Route element={<RequireAuth><RequireFacility><AppShell /></RequireFacility></RequireAuth>}>
         <Route path="dashboard"  element={<DashboardPage />} />
         <Route path="inventory"  element={<InventoryPage />} />
-        <Route path="alerts"     element={<AlertsPage />} />
+        <Route path="safety-alerts" element={<AlertsPage />} />
+        <Route path="drug-alerts"    element={<DrugAlertsPage />} />
         <Route path="search"     element={<SearchPage />} />
         <Route path="transfers"  element={<TransfersPage />} />
         <Route path="staff"      element={<StaffPage />} />
