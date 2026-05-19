@@ -1,10 +1,10 @@
-# MediChain Africa
+# Orela
 
-## Pharmaceutical Supply Intelligence for African Healthcare Providers
+## Medicine Availability Network — Africa
 
-MediChain Africa is a medicine availability and pharmaceutical operations platform designed to help healthcare facilities prevent stockouts, reduce expiry waste, and coordinate medicine transfers across fragmented healthcare systems.
+Orela is a medicine availability and pharmaceutical operations platform designed to help healthcare facilities prevent stockouts, reduce expiry waste, and coordinate medicine transfers across fragmented healthcare systems.
 
-Built for hospitals, pharmacies, clinics, NGOs, and healthcare networks, MediChain transforms medicine inventory from isolated facility records into a connected operational intelligence system.
+Built for hospitals, pharmacies, clinics, NGOs, and healthcare networks, Orela transforms medicine inventory from isolated facility records into a connected operational intelligence system.
 
 ---
 
@@ -25,9 +25,9 @@ They need operational visibility.
 
 ---
 
-## What MediChain Does
+## What Orela Does
 
-MediChain enables healthcare providers to:
+Orela enables healthcare providers to:
 
 ### Track Inventory in Real Time
 - Monitor medicine batches
@@ -55,7 +55,7 @@ Facilities can search across connected healthcare providers to discover:
 - Maintain movement history and auditability
 
 ### Build Operational Intelligence
-MediChain is evolving into a pharmaceutical coordination layer that enables:
+Orela is evolving into a pharmaceutical coordination layer that enables:
 - Regional medicine visibility
 - Healthcare network coordination
 - Supply intelligence
@@ -64,9 +64,9 @@ MediChain is evolving into a pharmaceutical coordination layer that enables:
 
 ---
 
-# Core Product Areas
+## Core Product Areas
 
-## Dashboard
+### Dashboard
 Operational visibility into:
 - Inventory health
 - Stock risk
@@ -74,7 +74,7 @@ Operational visibility into:
 - Transfer activity
 - Critical alerts
 
-## Inventory Management
+### Inventory Management
 - Batch-based medicine tracking
 - Quantity adjustments
 - Expiry monitoring
@@ -82,16 +82,16 @@ Operational visibility into:
 - Storage conditions
 - Reorder thresholds
 
-## Alerts & Risk Monitoring
+### Alerts & Risk Monitoring
 - Low stock
 - Out of stock
 - Near expiry
 - Inventory risk prioritization
 
-## Medicine Search
+### Medicine Search
 Search medicine availability across connected facilities.
 
-## Transfer Workflow
+### Transfer Workflow
 - Pending
 - Approved
 - In transit
@@ -99,32 +99,32 @@ Search medicine availability across connected facilities.
 
 ---
 
-# Technology Stack
+## Technology Stack
 
-Frontend
+**Frontend**
 - React
 - React Router
 - Modular CSS architecture
 
-Backend
+**Backend**
 - Supabase
 - PostgreSQL
 - RPC-based business logic
 - Row Level Security (RLS)
 
-Infrastructure
+**Infrastructure**
 - Vercel deployment
 - Secure facility-scoped access control
 
 ---
 
-# Design Philosophy
+## Design Philosophy
 
-MediChain is designed as:
+Orela is designed as:
 
-> A pharmaceutical supply intelligence command center for African healthcare providers.
+> A medicine availability network for African healthcare providers.
 
-The platform prioritizes:
+The platform prioritises:
 - Operational clarity
 - Clinical trust
 - High-density workflows
@@ -133,25 +133,25 @@ The platform prioritizes:
 
 ---
 
-# Long-Term Vision
+## Long-Term Vision
 
-MediChain is not simply inventory software.
+Orela is not simply inventory software.
 
-The long-term vision is to become the operational coordination layer for medicine availability across African healthcare systems.
+The long-term vision is to become the operational coordination layer for medicine availability across Africa.
 
 Future directions include:
 - Regional medicine visibility networks
 - Supply intelligence analytics
-- Transfer optimization
+- Transfer optimisation
 - Essential medicine monitoring
 - Procurement coordination
 - Facility network interoperability
 
 ---
 
-# Current Status
+## Current Status
 
-MVP in active development.
+Beta — Nigeria region active.
 
 Current focus:
 - Inventory operations
@@ -162,23 +162,24 @@ Current focus:
 
 ---
 
-# Ideal Early Partners
+## Ideal Early Partners
 
 - Private hospital groups
 - Pharmacy chains
-- NGO healthcare programs
+- NGO healthcare programmes
 - Regional healthcare networks
-- Government pilot programs
+- Government pilot programmes
 
 ---
 
-# Mission
+## Mission
 
-To reduce medicine stock fragmentation and improve pharmaceutical availability across African healthcare systems through connected operational intelligence.
+To reduce medicine stock fragmentation and improve pharmaceutical availability across Africa through connected operational intelligence.
 
 ---
 
-# Contact
+## Contact
 
-MediChain Africa  
-Building the infrastructure layer for medicine availability intelligence.
+Orela  
+[orela.africa](https://orela.africa)  
+Building the infrastructure layer for medicine availability across Africa.
